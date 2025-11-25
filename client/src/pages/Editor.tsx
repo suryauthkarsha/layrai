@@ -639,7 +639,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                 <div onClick={() => { handleExport('pdf', activeScreenIndex); setExportMenuOpen(false); }} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs hover:bg-white/10 text-white cursor-pointer" data-testid="button-export-pdf">
                   <FileText size={14} className="text-red-400" /> PDF
                 </div>
-                <div onClick={() => { handleExport('png', null); setExportMenuOpen(false); }} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs hover:bg-white/10 text-white cursor-pointer" data-testid="button-export-png">
+                <div onClick={() => { handleExport('png', activeScreenIndex); setExportMenuOpen(false); }} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs hover:bg-white/10 text-white cursor-pointer" data-testid="button-export-png">
                   <FileImage size={14} className="text-purple-400" /> Image
                 </div>
               </div>

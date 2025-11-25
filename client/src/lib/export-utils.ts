@@ -34,7 +34,13 @@ export const captureElement = async (
     useCORS: true, 
     allowTaint: true,
     logging: false,
-    imageTimeout: 0
+    imageTimeout: 0,
+    ignoreElements: (element: Element) => {
+      // Ignore canvas overlay and other UI elements
+      if (element.classList?.contains('overlay-canvas')) return true;
+      if (element.classList?.contains('viewport-controls')) return true;
+      return false;
+    }
   };
   
   try {
@@ -62,6 +68,33 @@ export const captureElement = async (
       if (!elementId) return null;
       const element = document.getElementById(elementId);
       if (!element) return null;
+      
+      // Look for iframe inside the element and capture its content
+      const iframe = element.querySelector('iframe') as HTMLIFrameElement;
+      if (iframe) {
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            // Capture the iframe document
+            // @ts-ignore
+            const canvas = await window.html2canvas(iframeDoc.body || iframeDoc.documentElement, {
+              ...options,
+              backgroundColor: '#ffffff'
+            });
+            if (canvas && filename) {
+              const a = document.createElement('a');
+              a.href = canvas.toDataURL('image/png');
+              a.download = `${filename}.png`;
+              a.click();
+            }
+            return canvas;
+          }
+        } catch (iframeError) {
+          console.warn('Could not access iframe content, capturing element instead:', iframeError);
+        }
+      }
+      
+      // Fallback: capture the element itself
       // @ts-ignore
       const canvas = await window.html2canvas(element, options);
       if (canvas && filename) {
