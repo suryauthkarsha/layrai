@@ -39,7 +39,7 @@ export default function Home({ projects, onCreate, onDelete, onOpen }: HomeProps
           ></div>
           
           {/* Top Dark Gradient Overlay */}
-          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-10"></div>
+          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black via-black/60 to-transparent z-10"></div>
           
           {/* Bottom Dark Gradient Overlay */}
           <div className="absolute bottom-0 left-0 right-0 h-56 bg-gradient-to-t from-black via-black/60 to-transparent z-10"></div>
