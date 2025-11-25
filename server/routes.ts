@@ -12,13 +12,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Prompt is required" });
       }
 
-      const apiKey = process.env.GOOGLE_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
         return res.status(500).json({ error: "API key not configured" });
       }
 
       // Log key validation (without exposing the full key)
-      console.log(`[API] Using GOOGLE_API_KEY (${apiKey.substring(0, 8)}...)`);
+      console.log(`[API] Using GEMINI_API_KEY (${apiKey.substring(0, 8)}...)`);
 
       const systemPrompt = getSystemPrompt(screenCount || 1, platform || 'mobile', []);
 
