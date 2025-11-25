@@ -50,7 +50,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [textBoxes, setTextBoxes] = useState<Array<{ id: string; x: number; y: number; text: string }>>([]);
   const [shapes, setShapes] = useState<Array<{ id: string; type: 'rect' | 'circle' | 'triangle'; x: number; y: number; width: number; height: number; color: string }>>([]);
   const [shapePreview, setShapePreview] = useState<{ x: number; y: number } | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState(450);
+  const [sidebarWidth, setSidebarWidth] = useState(350);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -100,7 +100,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingSidebar) return;
       // Calculate width from left edge (0) to current mouse position
-      const newWidth = Math.max(300, Math.min(750, Math.max(0, e.clientX)));
+      const newWidth = Math.max(250, Math.min(600, Math.max(0, e.clientX)));
       setSidebarWidth(newWidth);
     };
 
@@ -526,7 +526,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       {/* Sidebar */}
       {activePanel === 'generate' && (
         <div 
-          className="bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col relative group"
+          className={`bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col relative group ${isGenerating ? 'shadow-2xl shadow-blue-500/40' : ''}`}
           style={{ width: sidebarWidth + 'px', transition: isResizingSidebar ? 'none' : 'width 0.2s' }}
         >
           <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -657,7 +657,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         {/* Canvas Area */}
         <div 
           ref={canvasRef} 
-          className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${isGenerating ? 'viewport-generating' : ''}`}
+          className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${isGenerating ? 'viewport-generating shadow-2xl shadow-blue-500/50 inset' : ''}`}
           onMouseDown={(e) => {
             if ((toolMode === 'hand' || isSpacePanning) && !isPanning) {
               setIsPanning(true);
@@ -719,11 +719,11 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           >
             {/* Initial placeholder */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed top-32 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
-                <div className="w-24 h-24 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center shadow-2xl shadow-blue-500/20 animate-pulse">
-                  <Wand2 size={36} className="text-blue-400" />
+              <div className="fixed top-1/3 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
+                <div className="w-32 h-32 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
+                  <Wand2 size={48} className="text-blue-400" />
                 </div>
-                <p className="mt-4 text-neutral-400 text-sm" data-testid="text-placeholder">Start Architecting</p>
+                <p className="mt-6 text-neutral-300 text-2xl font-semibold tracking-wide" data-testid="text-placeholder">Start Architecting</p>
               </div>
             )}
 
