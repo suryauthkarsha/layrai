@@ -97,12 +97,19 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser')) {
-      const layer = document.getElementById('drawing-layer');
-      if (!layer) return;
-      const rect = layer.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / zoom;
-      const y = (e.clientY - rect.top) / zoom;
+      const canvasContainer = canvasRef.current;
+      if (!canvasContainer) return;
+      
+      const rect = canvasContainer.getBoundingClientRect();
+      const scrollLeft = canvasContainer.scrollLeft;
+      const scrollTop = canvasContainer.scrollTop;
+      
+      // Account for canvas container position and scroll
+      const x = (e.clientX - rect.left + scrollLeft) / zoom;
+      const y = (e.clientY - rect.top + scrollTop) / zoom;
+      
       setDrawings(prev => {
+        if (prev.length === 0) return prev;
         const last = prev[prev.length - 1];
         const updated = { ...last, points: [...last.points, { x, y }] };
         return [...prev.slice(0, -1), updated];
@@ -294,15 +301,25 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Ignore clicks on buttons, inputs, or other UI elements
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+    
     const drawingColor = toolMode === 'eraser' ? 'transparent' : customColor;
     
     if (toolMode === 'pen' || toolMode === 'eraser') {
       setIsDrawing(true);
-      const layer = document.getElementById('drawing-layer');
-      if (!layer) return;
-      const rect = layer.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / zoom;
-      const y = (e.clientY - rect.top) / zoom;
+      
+      const canvasContainer = canvasRef.current;
+      if (!canvasContainer) return;
+      
+      const rect = canvasContainer.getBoundingClientRect();
+      const scrollLeft = canvasContainer.scrollLeft;
+      const scrollTop = canvasContainer.scrollTop;
+      
+      // Account for canvas container position and scroll
+      const x = (e.clientX - rect.left + scrollLeft) / zoom;
+      const y = (e.clientY - rect.top + scrollTop) / zoom;
+      
       setDrawings(p => [...p, { 
         color: drawingColor, 
         points: [{ x, y }], 
@@ -319,12 +336,10 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       return;
     }
     
-    if ((e.target as HTMLElement).closest('.viewport-container') && (toolMode === 'hand' || e.button === 1)) {
-      if (!(e.target as HTMLElement).closest('button') && !(e.target as HTMLElement).closest('input')) {
-        setIsPanning(true);
-        setPanStart({ x: e.clientX, y: e.clientY });
-        if (canvasRef.current) setScrollStart({ left: canvasRef.current.scrollLeft, top: canvasRef.current.scrollTop });
-      }
+    if ((toolMode === 'hand' || e.button === 1) && canvasRef.current) {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX, y: e.clientY });
+      setScrollStart({ left: canvasRef.current.scrollLeft, top: canvasRef.current.scrollTop });
     }
   };
 
@@ -400,11 +415,16 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     <div className="flex h-screen w-full bg-[#050505] text-neutral-200 font-sans overflow-hidden selection:bg-blue-500/30">
       <style>{`
         @keyframes subtle-pulse { 0%, 100% { box-shadow: 0 0 100px 50px rgba(59, 130, 246, 0.05); } 50% { box-shadow: 0 0 150px 80px rgba(59, 130, 246, 0.15); } }
+        @keyframes blue-glow { 0%, 100% { box-shadow: inset 0 0 30px rgba(59, 130, 246, 0.2), 0 0 60px rgba(59, 130, 246, 0.3); } 50% { box-shadow: inset 0 0 50px rgba(59, 130, 246, 0.4), 0 0 100px rgba(59, 130, 246, 0.5); } }
         #drawing-layer { 
           mix-blend-mode: normal;
           pointer-events: auto;
         }
         .canvas-drawing { mix-blend-mode: normal; }
+        .viewport-generating {
+          animation: blue-glow 2s ease-in-out infinite;
+          border: 2px solid rgba(59, 130, 246, 0.6);
+        }
       `}</style>
 
       {/* Sidebar */}
@@ -477,8 +497,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         {/* Canvas */}
         <div 
           ref={canvasRef} 
-          className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+          className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${isGenerating ? 'viewport-generating' : ''}`}
           onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
           onWheel={(e) => { 
             if (e.ctrlKey || e.metaKey) { 
               e.preventDefault(); 
@@ -569,12 +590,12 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                 data-index={idx}
                 onClick={() => setActiveScreenIndex(idx)} 
                 onMouseDown={toolMode === 'cursor' ? (e) => handleDragStart(e, idx) : undefined}
-                className={`draggable-screen absolute transition-all duration-300 ease-out group ${idx === activeScreenIndex ? 'ring-4 ring-blue-500/50 scale-[1.02] z-10' : 'hover:scale-[1.01]'} ${toolMode === 'cursor' ? 'cursor-grab' : ''}`}
+                className={`draggable-screen absolute group ${idx === activeScreenIndex ? 'ring-4 ring-blue-500/50 z-10' : 'hover:scale-[1.01]'} ${toolMode === 'cursor' ? 'cursor-grab' : ''}`}
                 style={{
-                  transform: `scale(${zoom})`,
-                  left: `${(screen.x || 0) + 500}px`,
-                  top: `${(screen.y || 0) + 500}px`,
-                  zIndex: activeScreenIndex === idx && isDraggingScreen ? 60 : activeScreenIndex === idx ? 10 : 5
+                  transform: `translate(${(screen.x || 0) + 500}px, ${(screen.y || 0) + 500}px) scale(${zoom})${idx === activeScreenIndex ? ' scale(1.02)' : ''}`,
+                  transformOrigin: 'top left',
+                  zIndex: activeScreenIndex === idx && isDraggingScreen ? 60 : activeScreenIndex === idx ? 10 : 5,
+                  transition: isDraggingScreen ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
                 data-testid={`screen-${idx}`}
               >
