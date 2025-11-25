@@ -50,6 +50,8 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [textBoxes, setTextBoxes] = useState<Array<{ id: string; x: number; y: number; text: string }>>([]);
   const [shapes, setShapes] = useState<Array<{ id: string; type: 'rect' | 'circle' | 'triangle'; x: number; y: number; width: number; height: number; color: string }>>([]);
   const [shapePreview, setShapePreview] = useState<{ x: number; y: number } | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(384);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -92,6 +94,28 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
+
+  // Sidebar resize handler
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingSidebar) return;
+      const newWidth = Math.max(250, Math.min(600, e.clientX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingSidebar(false);
+    };
+
+    if (isResizingSidebar) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizingSidebar]);
 
   // Undo Logic
   const saveStateToHistory = (newState: Screen[]) => {
@@ -484,7 +508,10 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
       {/* Sidebar */}
       {activePanel === 'generate' && (
-        <div className="w-96 sm:w-80 md:w-96 max-w-xs bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
+        <div 
+          className="bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col relative group"
+          style={{ width: sidebarWidth + 'px', transition: isResizingSidebar ? 'none' : 'width 0.2s' }}
+        >
           <div className="flex items-center justify-between p-4 border-b border-white/10">
             <h2 className="text-xs font-bold text-white" data-testid="heading-generate">Generate UI</h2>
             <button onClick={() => setActivePanel(null)} className="p-1 hover:bg-white/10 rounded" data-testid="button-close-panel">
@@ -503,7 +530,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   }
                 }}
                 placeholder="Describe the UI you want... (spaces work fine)"
-                className="w-full h-24 bg-[#252525] border-2 border-blue-500/30 rounded-lg p-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/30 resize-none transition-all"
+                className="w-full h-24 bg-[#252525] border-2 border-blue-500/50 rounded-lg p-3 text-sm text-white placeholder-neutral-400 focus:outline-none focus:border-blue-400 focus:shadow-[0_0_20px_rgba(59,130,246,0.6)] resize-none transition-all"
                 data-testid="input-prompt"
                 spellCheck="false"
               />
@@ -545,6 +572,13 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             </button>
             <button onClick={() => setActivePanel(null)} className="w-full bg-neutral-800/50 hover:bg-neutral-700/50 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors" data-testid="button-cancel">Cancel</button>
           </div>
+          {/* Resize Handle */}
+          <div
+            onMouseDown={() => setIsResizingSidebar(true)}
+            className="absolute right-0 top-0 bottom-0 w-1 bg-blue-500/0 hover:bg-blue-500/50 cursor-col-resize transition-colors"
+            style={{ width: '6px', right: '-3px' }}
+            title="Drag to resize sidebar"
+          />
         </div>
       )}
 
