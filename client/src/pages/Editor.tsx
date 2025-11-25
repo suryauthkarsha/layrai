@@ -433,6 +433,10 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     }
   };
 
+  const handleGenerateClick = () => {
+    setActivePanel('generate');
+  };
+
   return (
     <div className="flex h-screen bg-[#050505]">
       {/* Overlay Canvas for Drawing */}
@@ -513,7 +517,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             </button>
           </div>
 
-          <button onClick={() => setActivePanel('generate')} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all flex items-center gap-2 shadow-lg" data-testid="button-generate-panel">
+          <button onClick={handleGenerateClick} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all flex items-center gap-2 shadow-lg" data-testid="button-generate-panel">
             <Sparkles size={16} />
             Generate
           </button>
