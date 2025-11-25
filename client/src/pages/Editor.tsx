@@ -707,19 +707,19 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           
           <div 
             id="canvas-root" 
-            className="flex gap-20 transition-transform duration-200 ease-out" 
+            className="flex gap-32 transition-transform duration-200 ease-out" 
             style={{ 
               transform: `scale(${zoom})`, 
               transformOrigin: 'top left',
               minWidth: 'fit-content', 
               minHeight: 'fit-content', 
-              padding: '400px 300px', 
-              gap: '200px' 
+              padding: '600px 500px', 
+              gap: '300px' 
             }}
           >
             {/* Initial placeholder */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed top-24 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
+              <div className="fixed top-16 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
                 <div className="w-40 h-40 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
                   <Wand2 size={60} className="text-blue-400" />
                 </div>
