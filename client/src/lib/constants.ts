@@ -48,9 +48,9 @@ export const PRESET_THEMES = {
   },
 };
 
-// Platform dimensions - make horizontal as big as vertical for square canvas
+// Platform dimensions - iPhone 13 Pro Max and MacBook Air 15"
 export const PLATFORM_DIMENSIONS = {
-  mobile: { width: 812, height: 812 },
-  desktop: { width: 1440, height: 1440 },
-  general: { width: 1200, height: 1200 },
+  mobile: { width: 430, height: 932 },
+  desktop: { width: 1728, height: 1117 },
+  general: { width: 1200, height: 800 },
 } as const;

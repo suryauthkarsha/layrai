@@ -40,7 +40,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [isSpacePanning, setIsSpacePanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoom] = useState(0.5);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [customColor, setCustomColor] = useState('#3b82f6');
   const [screenCount, setScreenCount] = useState(1);
@@ -503,7 +503,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   }
                 }}
                 placeholder="Describe the UI you want... (spaces work fine)"
-                className="w-full h-20 bg-[#252525] border border-white/10 rounded-lg p-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50 resize-none"
+                className="w-full h-24 bg-[#252525] border-2 border-blue-500/30 rounded-lg p-3 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 focus:shadow-lg focus:shadow-blue-500/30 resize-none transition-all"
                 data-testid="input-prompt"
                 spellCheck="false"
               />
@@ -512,16 +512,16 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-platform">Platform</label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button onClick={() => setPlatform('mobile')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'mobile' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-mobile">
-                  <div className="text-xs font-semibold">Mobile</div>
-                  <div className="text-[10px] text-neutral-400">812x812</div>
+                  <div className="text-xs font-semibold">iPhone 13 Pro</div>
+                  <div className="text-[10px] text-neutral-400">430x932</div>
                 </button>
                 <button onClick={() => setPlatform('desktop')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'desktop' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-desktop">
-                  <div className="text-xs font-semibold">Desktop</div>
-                  <div className="text-[10px] text-neutral-400">1440x1440</div>
+                  <div className="text-xs font-semibold">MacBook Air 15"</div>
+                  <div className="text-[10px] text-neutral-400">1728x1117</div>
                 </button>
                 <button onClick={() => setPlatform('general')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'general' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-general">
                   <div className="text-xs font-semibold">General</div>
-                  <div className="text-[10px] text-neutral-400">1200x1200</div>
+                  <div className="text-[10px] text-neutral-400">1200x800</div>
                 </button>
               </div>
             </div>
@@ -705,7 +705,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   </div>
                 </div>
                 <div 
-                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[812px] rounded-[50px]' : platform === 'desktop' ? 'w-[1440px] rounded-xl' : 'w-[1200px] rounded-xl'}`} 
+                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[430px] rounded-[50px]' : platform === 'desktop' ? 'w-[1728px] rounded-xl' : 'w-[1200px] rounded-xl'}`} 
                   style={{ height: getFrameHeight() + 'px' }}
                 >
                   {platform === 'mobile' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a1a] rounded-b-xl z-20 pointer-events-none"></div>}
