@@ -101,46 +101,48 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   }, [toolMode, isPanning, zoom]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    // Store event for shape preview
-    (window as any).lastMouseEvent = e;
-    
     if (!svgLayerRef.current) return;
     
-    const rect = svgLayerRef.current.getBoundingClientRect();
+    const svg = svgLayerRef.current;
+    const rect = svg.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Pen or Eraser drawing
-    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser')) {
-      if (toolMode === 'eraser') {
-        // Erase drawings within radius
-        const eraserRadius = strokeSize;
-        setDrawings(prev => prev.filter(d => {
-          if (d.isEraser) return true; // Keep eraser marks
-          return !d.points.some(p => {
+    // PEN DRAWING
+    if (isDrawing && toolMode === 'pen') {
+      setDrawings(prev => {
+        if (prev.length === 0) return prev;
+        const lastDrawing = prev[prev.length - 1];
+        if (lastDrawing.isEraser) return prev;
+        
+        const newPoints = [...lastDrawing.points, { x, y }];
+        const updated = { ...lastDrawing, points: newPoints };
+        return [...prev.slice(0, -1), updated];
+      });
+      return;
+    }
+    
+    // ERASER
+    if (isDrawing && toolMode === 'eraser') {
+      const eraserRadius = strokeSize * 2;
+      setDrawings(prev => 
+        prev.filter(d => 
+          !d.isEraser && !d.points.some(p => {
             const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
             return dist < eraserRadius;
-          });
-        }));
-      } else {
-        // Pen drawing
-        setDrawings(prev => {
-          if (prev.length === 0) return prev;
-          const last = prev[prev.length - 1];
-          if (last.isEraser) return prev;
-          const updated = { ...last, points: [...last.points, { x, y }] };
-          return [...prev.slice(0, -1), updated];
-        });
-      }
+          })
+        )
+      );
       return;
     }
     
-    // Trigger re-render for shape preview
+    // SHAPE DRAWING - store current position for preview
     if (isDrawing && toolMode === 'shapes' && shapeStart) {
-      setShapeStart({ ...shapeStart });
+      (window as any).currentShapeEnd = { x, y };
       return;
     }
     
+    // PANNING
     if (isPanning && canvasRef.current) {
       canvasRef.current.scrollLeft = scrollStart.left - (e.clientX - panStart.x);
       canvasRef.current.scrollTop = scrollStart.top - (e.clientY - panStart.y);
@@ -152,20 +154,17 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       saveStateToHistory(generatedScreens);
     }
     
-    // Finalize shape
+    // FINALIZE SHAPE
     if (isDrawing && toolMode === 'shapes' && shapeStart && shapeMode) {
-      const lastEvent = (window as any).lastMouseEvent;
-      if (lastEvent && svgLayerRef.current) {
-        const rect = svgLayerRef.current.getBoundingClientRect();
-        const endX = lastEvent.clientX - rect.left;
-        const endY = lastEvent.clientY - rect.top;
+      const end = (window as any).currentShapeEnd;
+      if (end && svgLayerRef.current) {
+        const width = Math.abs(end.x - shapeStart.x);
+        const height = Math.abs(end.y - shapeStart.y);
         
-        const width = Math.abs(endX - shapeStart.x);
-        const height = Math.abs(endY - shapeStart.y);
-        const minX = Math.min(shapeStart.x, endX);
-        const minY = Math.min(shapeStart.y, endY);
-        
-        if (width > 5 && height > 5) {
+        if (width > 10 && height > 10) {
+          const minX = Math.min(shapeStart.x, end.x);
+          const minY = Math.min(shapeStart.y, end.y);
+          
           setShapes(prev => [...prev, {
             id: `shape-${Date.now()}`,
             type: shapeMode,
@@ -178,6 +177,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         }
       }
       setShapeStart(null);
+      (window as any).currentShapeEnd = null;
     }
     
     setIsPanning(false);
@@ -372,53 +372,70 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Ignore clicks on buttons, inputs, or other UI elements
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+    // Ignore button/input clicks
+    const isUI = (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input');
+    if (isUI) return;
     
     if (!svgLayerRef.current) return;
     
-    const rect = svgLayerRef.current.getBoundingClientRect();
+    const svg = svgLayerRef.current;
+    const rect = svg.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Pen or Eraser
-    if (toolMode === 'pen' || toolMode === 'eraser') {
+    // PEN TOOL
+    if (toolMode === 'pen') {
       setIsDrawing(true);
-      const drawingColor = toolMode === 'eraser' ? 'transparent' : customColor;
-      setDrawings(p => [...p, { 
-        color: drawingColor, 
-        points: [{ x, y }], 
-        strokeWidth: strokeSize, 
-        isEraser: toolMode === 'eraser' 
+      setDrawings(prev => [...prev, {
+        color: customColor,
+        points: [{ x, y }],
+        strokeWidth: strokeSize,
+        isEraser: false
       }]);
       return;
     }
     
-    // Shapes
+    // ERASER TOOL
+    if (toolMode === 'eraser') {
+      setIsDrawing(true);
+      return;
+    }
+    
+    // SHAPES TOOL
     if (toolMode === 'shapes' && shapeMode) {
       setIsDrawing(true);
       setShapeStart({ x, y });
+      (window as any).currentShapeEnd = { x, y };
       return;
     }
     
-    // Text
+    // TEXT TOOL
     if (toolMode === 'text') {
-      const textId = `text-${Date.now()}`;
-      setTextBoxes(prev => [...prev, { id: textId, x, y, text: 'Click to edit' }]);
+      setTextBoxes(prev => [...prev, {
+        id: `text-${Date.now()}`,
+        x,
+        y,
+        text: 'Edit text'
+      }]);
       return;
     }
-
+    
+    // CURSOR - drag screens
     const screenTarget = (e.target as HTMLElement).closest('.draggable-screen');
     if (screenTarget && toolMode === 'cursor') {
-      const screenIndex = parseInt((screenTarget as HTMLElement).dataset.index || '0', 10);
-      handleDragStart(e, screenIndex);
+      const idx = parseInt((screenTarget as HTMLElement).dataset.index || '0', 10);
+      handleDragStart(e, idx);
       return;
     }
     
+    // HAND / PAN
     if ((toolMode === 'hand' || e.button === 1) && canvasRef.current) {
       setIsPanning(true);
       setPanStart({ x: e.clientX, y: e.clientY });
-      setScrollStart({ left: canvasRef.current.scrollLeft, top: canvasRef.current.scrollTop });
+      setScrollStart({ 
+        left: canvasRef.current.scrollLeft, 
+        top: canvasRef.current.scrollTop 
+      });
     }
   };
 
@@ -765,17 +782,14 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             })}
             
             {/* Shape preview while drawing */}
-            {isDrawing && toolMode === 'shapes' && shapeStart && svgLayerRef.current && (() => {
-              const rect = svgLayerRef.current!.getBoundingClientRect();
-              const currentEvent = (window as any).lastMouseEvent;
-              if (!currentEvent) return null;
+            {isDrawing && toolMode === 'shapes' && shapeStart && (() => {
+              const end = (window as any).currentShapeEnd;
+              if (!end) return null;
               
-              const endX = currentEvent.clientX - rect.left;
-              const endY = currentEvent.clientY - rect.top;
-              const width = Math.abs(endX - shapeStart.x);
-              const height = Math.abs(endY - shapeStart.y);
-              const minX = Math.min(shapeStart.x, endX);
-              const minY = Math.min(shapeStart.y, endY);
+              const width = Math.abs(end.x - shapeStart.x);
+              const height = Math.abs(end.y - shapeStart.y);
+              const minX = Math.min(shapeStart.x, end.x);
+              const minY = Math.min(shapeStart.y, end.y);
               
               if (shapeMode === 'rect') {
                 return (
