@@ -129,7 +129,6 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     setIsPanning(false);
     setIsDrawing(false);
     setIsDraggingScreen(false);
-    if (toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes') setToolMode('cursor');
   };
 
   // Save to parent
@@ -568,16 +567,15 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           >
             <svg id="drawing-layer" className="canvas-drawing absolute inset-0 overflow-visible z-40" 
               style={{ 
-                minWidth: '100%', 
-                minHeight: '100%',
+                minWidth: 'fit-content', 
+                minHeight: 'fit-content',
                 pointerEvents: isDrawingToolActive ? 'auto' : 'none',
                 left: 0,
                 top: 0,
+                position: 'absolute',
                 width: '100%',
                 height: '100%'
               }}
-              viewBox="0 0 10000 10000"
-              preserveAspectRatio="none"
             >
               {drawings.map((d, i) => 
                 d.isEraser ? (
