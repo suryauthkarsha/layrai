@@ -59,7 +59,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
   const isInteracting = isPanning || isDrawingToolActive || isDraggingScreen;
 
-  const fixedUILeft = sidebarIsOpened ? 'calc(50% + 375px)' : '50%';
+  const fixedUILeft = sidebarIsOpened ? 'calc(50% + 160px)' : '50%';
   const fixedUIStyle: React.CSSProperties = {
     position: 'fixed',
     left: fixedUILeft as any,
@@ -480,60 +480,60 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
       {/* Sidebar */}
       {activePanel === 'generate' && (
-        <div className="w-[750px] bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
-          <div className="flex items-center justify-between p-5 border-b border-white/10">
-            <h2 className="text-sm font-bold text-white" data-testid="heading-generate">Generate UI</h2>
+        <div className="w-80 bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <h2 className="text-xs font-bold text-white" data-testid="heading-generate">Generate UI</h2>
             <button onClick={() => setActivePanel(null)} className="p-1 hover:bg-white/10 rounded" data-testid="button-close-panel">
-              <X size={16} className="text-neutral-400" />
+              <X size={14} className="text-neutral-400" />
             </button>
           </div>
-          <div className="flex-1 p-5 space-y-5">
+          <div className="flex-1 p-4 space-y-3">
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-3" data-testid="label-prompt">Design Prompt</label>
+              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-prompt">Design Prompt</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the UI you want to create..."
-                className="w-full h-28 bg-[#252525] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50"
+                placeholder="Describe the UI you want..."
+                className="w-full h-20 bg-[#252525] border border-white/10 rounded-lg p-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50"
                 data-testid="input-prompt"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-3" data-testid="label-platform">Platform</label>
-              <div className="grid grid-cols-3 gap-2">
-                <button onClick={() => setPlatform('mobile')} className={`p-3 rounded-lg border-2 transition-all ${platform === 'mobile' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-mobile">
+              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-platform">Platform</label>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button onClick={() => setPlatform('mobile')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'mobile' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-mobile">
                   <div className="text-xs font-semibold">Mobile</div>
-                  <div className="text-xs text-neutral-400">375x812</div>
+                  <div className="text-[10px] text-neutral-400">812x812</div>
                 </button>
-                <button onClick={() => setPlatform('desktop')} className={`p-3 rounded-lg border-2 transition-all ${platform === 'desktop' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-desktop">
+                <button onClick={() => setPlatform('desktop')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'desktop' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-desktop">
                   <div className="text-xs font-semibold">Desktop</div>
-                  <div className="text-xs text-neutral-400">1200x800</div>
+                  <div className="text-[10px] text-neutral-400">900x900</div>
                 </button>
-                <button onClick={() => setPlatform('general')} className={`p-3 rounded-lg border-2 transition-all ${platform === 'general' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-general">
+                <button onClick={() => setPlatform('general')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'general' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-general">
                   <div className="text-xs font-semibold">General</div>
-                  <div className="text-xs text-neutral-400">1200x600</div>
+                  <div className="text-[10px] text-neutral-400">800x800</div>
                 </button>
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-3" data-testid="label-count">Screens</label>
-              <div className="flex items-center justify-center gap-4">
-                <button onClick={() => setScreenCount(Math.max(1, screenCount - 1))} className="p-2 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-minus">
-                  <MinusCircle size={20} />
+              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-count">Screens</label>
+              <div className="flex items-center justify-center gap-3">
+                <button onClick={() => setScreenCount(Math.max(1, screenCount - 1))} className="p-1.5 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-minus">
+                  <MinusCircle size={16} />
                 </button>
                 <span className="text-lg font-semibold text-white w-8 text-center" data-testid="text-screen-count">{screenCount}</span>
-                <button onClick={() => setScreenCount(Math.min(5, screenCount + 1))} className="p-2 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-plus">
-                  <PlusCircle size={20} />
+                <button onClick={() => setScreenCount(Math.min(5, screenCount + 1))} className="p-1.5 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-plus">
+                  <PlusCircle size={16} />
                 </button>
               </div>
             </div>
           </div>
-          <div className="p-5 border-t border-white/10 space-y-2">
-            <button onClick={handleGenerate} disabled={isGenerating || !prompt} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-sm font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2" data-testid="button-generate">
-              {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+          <div className="p-4 border-t border-white/10 space-y-2">
+            <button onClick={handleGenerate} disabled={isGenerating || !prompt} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2" data-testid="button-generate">
+              {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
               {isGenerating ? 'Generating...' : 'Generate'}
             </button>
-            <button onClick={() => setActivePanel(null)} className="w-full bg-neutral-800/50 hover:bg-neutral-700/50 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors" data-testid="button-cancel">Cancel</button>
+            <button onClick={() => setActivePanel(null)} className="w-full bg-neutral-800/50 hover:bg-neutral-700/50 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors" data-testid="button-cancel">Cancel</button>
           </div>
         </div>
       )}
