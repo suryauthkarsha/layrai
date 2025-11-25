@@ -116,23 +116,22 @@ TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/T
    </div>
    \`\`\`
    
-3. **EMOJIS - 100% MANDATORY IN EVERY DESIGN:**
-   - ADD EMOJIS TO EVERY DESIGN - they make designs visually appealing and fun
-   - Use emojis in headings: "🎨 Welcome", "📱 Mobile App", "🚀 Get Started"
-   - Use emojis as section dividers and visual accents
-   - Include contextual emojis: 📊 for analytics, 💰 for pricing, 🎯 for goals, 👥 for team, etc.
-   - Minimum 5-10 emojis spread throughout each design
-   - Emojis should enhance visual hierarchy and guide user attention
+3. **EMOJIS - PRIMARY FOCUS, 100% MANDATORY IN EVERY DESIGN:**
+   - ADD LOTS OF EMOJIS TO EVERY DESIGN - they are PRIMARY visual elements that make designs engaging
+   - Use emojis extensively in headings, buttons, section titles, and throughout the design
+   - Use emojis as section dividers, bullet points, icons, and visual accents everywhere
+   - Include contextual emojis: 🎨 for art, 📊 for analytics, 💰 for pricing, 🎯 for goals, 👥 for team, 🚀 for growth, 💡 for ideas, ⭐ for ratings, ✅ for success, etc.
+   - Minimum 15-20+ emojis spread throughout each design
+   - Emojis should be large and prominent - use them as visual replacements for icons
+   - Use emoji combinations: 🎉✨🚀, 💡🔥⚡, etc.
+   - Emojis enhance visual hierarchy and make the design fun and engaging
 
-4. **IMAGES - 100% MANDATORY, NEVER SKIP:**
-   - YOU MUST INCLUDE 2-4 IMAGES IN EVERY SCREEN using the provided URLs below
-   - Use REAL image URLs provided below - do not make up URLs or use empty src attributes
-   - Place images prominently in the design (hero section, cards, backgrounds)
-   - Example: <img src="https://images.pexels.com/photos/..." class="w-full h-64 object-cover rounded-lg" alt="description" />
-   - OR use CSS gradients: <div class="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-600"></div>
-   - OR use SVG icons inline
-   - ABSOLUTELY NO empty img tags, NO missing src attributes, NO placeholder divs
-   - If you don't include images, the design is INCOMPLETE and REJECTED
+4. **IMAGES - OPTIONAL (use emojis instead when possible):**
+   - Optional: You MAY include 1-2 images if it enhances the design significantly
+   - Use REAL image URLs provided below if you choose to include images
+   - Prefer emojis over images for icons, bullets, and visual elements
+   - If using images, place them prominently in hero sections or backgrounds only
+   - CSS gradients and SVG are good alternatives to images
 
 5. **LAYOUT:** The root div MUST have 'w-full h-full min-h-screen' to fill the frame.
 6. **CONTENT:** Make it look realistic. Fill text with relevant content. Add depth with shadows and layering.

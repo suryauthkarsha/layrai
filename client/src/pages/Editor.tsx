@@ -99,7 +99,8 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingSidebar) return;
-      const newWidth = Math.max(250, Math.min(600, e.clientX));
+      // Calculate width from left edge (0) to current mouse position
+      const newWidth = Math.max(250, Math.min(600, Math.max(0, e.clientX)));
       setSidebarWidth(newWidth);
     };
 
@@ -108,11 +109,11 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     };
 
     if (isResizingSidebar) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mousemove', handleMouseMove, { passive: true });
+      document.addEventListener('mouseup', handleMouseUp);
       return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
       };
     }
   }, [isResizingSidebar]);
@@ -429,10 +430,22 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
   const handleExport = async (format: 'html' | 'html-all' | 'pdf' | 'png', screenIndex: number | null) => {
     if (format === 'html' && screenIndex !== null) {
-      const html = generatedScreens[screenIndex].rawHtml;
+      const screen = generatedScreens[screenIndex];
+      const wrappedHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${screen.name}</title>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body style="margin: 0; padding: 0; background: #1e1e1e;">
+  ${screen.rawHtml}
+</body>
+</html>`;
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-      a.download = `screen-${screenIndex}.html`;
+      a.href = URL.createObjectURL(new Blob([wrappedHtml], { type: 'text/html' }));
+      a.download = `${project.name || 'design'}-screen-${screenIndex + 1}.html`;
       a.click();
     } else if (format === 'html-all') {
       const dims = PLATFORM_DIMENSIONS[platform];
@@ -471,8 +484,12 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       a.click();
     } else if (format === 'pdf' && screenIndex !== null) {
       exportPDF(`screen-${screenIndex}`, generatedScreens[screenIndex].name);
-    } else if (format === 'png') {
-      await captureElement(null, `screens-${Date.now()}`, 3, true);
+    } else if (format === 'png' && screenIndex !== null) {
+      // Capture the specific screen frame
+      const screenElement = document.getElementById(`screen-${screenIndex}`);
+      if (screenElement) {
+        await captureElement(`screen-${screenIndex}`, `${project.name || 'design'}-screen-${screenIndex + 1}`, 3, false);
+      }
     }
   };
 
