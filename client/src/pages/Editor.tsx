@@ -444,7 +444,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           left: 0,
           pointerEvents: isDrawingToolActive ? 'auto' : 'none',
           zIndex: 40,
-          cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : toolMode === 'text' ? 'text' : 'auto'
+          cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : toolMode === 'text' ? 'text' : 'pointer'
         }}
         onMouseDown={handleOverlayMouseDown}
         onMouseMove={handleOverlayMouseMove}
@@ -680,114 +680,117 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         </div>
 
         {/* Bottom Toolbar */}
-        <div className="h-16 bg-[#1A1A1A] border-t border-white/10 flex items-center justify-center gap-2 px-4 z-30">
-          <button
-            onClick={() => setSoloToolMode('cursor')}
-            className={`p-2 rounded transition-colors ${toolMode === 'cursor' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-            title="Cursor"
-            data-testid="button-tool-cursor"
-          >
-            <MousePointer2 size={18} />
-          </button>
+        <div className="h-20 bg-[#1A1A1A] border-t border-white/10 flex items-center justify-center gap-6 px-6 z-30">
+          {/* Navigation Tools */}
+          <div className="flex items-center gap-2 bg-[#252525] p-1.5 rounded-lg border border-white/5">
+            <button
+              onClick={() => setSoloToolMode('cursor')}
+              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'cursor' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              title="Cursor"
+              data-testid="button-tool-cursor"
+            >
+              <MousePointer2 size={16} />
+            </button>
+            <button
+              onClick={() => setSoloToolMode('hand')}
+              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'hand' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              title="Hand / Pan"
+              data-testid="button-tool-hand"
+            >
+              <Hand size={16} />
+            </button>
+          </div>
 
-          <button
-            onClick={() => setSoloToolMode('hand')}
-            className={`p-2 rounded transition-colors ${toolMode === 'hand' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-            title="Hand / Pan"
-            data-testid="button-tool-hand"
-          >
-            <Hand size={18} />
-          </button>
+          {/* Drawing Tools */}
+          <div className="flex items-center gap-2 bg-[#252525] p-1.5 rounded-lg border border-white/5">
+            <button
+              onClick={() => setSoloToolMode('pen')}
+              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'pen' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              title="Pen"
+              data-testid="button-tool-pen"
+            >
+              <PenTool size={16} />
+            </button>
+            <button
+              onClick={() => setSoloToolMode('eraser')}
+              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'eraser' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              title="Eraser"
+              data-testid="button-tool-eraser"
+            >
+              <Eraser size={16} />
+            </button>
+            <div className="h-5 w-px bg-white/10"></div>
+            <button
+              onClick={() => setSoloToolMode('shapes')}
+              className={`px-2.5 py-1.5 rounded transition-all relative ${toolMode === 'shapes' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              title="Shapes"
+              data-testid="button-tool-shapes"
+            >
+              <Box size={16} />
+              {toolMode === 'shapes' && (
+                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#252525] border border-white/20 rounded-lg shadow-xl p-2 flex gap-1.5">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShapeMode('rect'); }}
+                    className={`p-2 rounded transition-all ${shapeMode === 'rect' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                    title="Rectangle"
+                    data-testid="button-shape-rect"
+                  >
+                    <Square size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShapeMode('circle'); }}
+                    className={`p-2 rounded transition-all ${shapeMode === 'circle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                    title="Circle"
+                    data-testid="button-shape-circle"
+                  >
+                    <Circle size={14} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShapeMode('triangle'); }}
+                    className={`p-2 rounded transition-all ${shapeMode === 'triangle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                    title="Triangle"
+                    data-testid="button-shape-triangle"
+                  >
+                    <Triangle size={14} />
+                  </button>
+                </div>
+              )}
+            </button>
+            <button
+              onClick={() => setSoloToolMode('text')}
+              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'text' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              title="Text"
+              data-testid="button-tool-text"
+            >
+              <Type size={16} />
+            </button>
+          </div>
 
-          <div className="h-6 w-px bg-white/10"></div>
-
-          <button
-            onClick={() => setSoloToolMode('pen')}
-            className={`p-2 rounded transition-colors ${toolMode === 'pen' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-            title="Pen"
-            data-testid="button-tool-pen"
-          >
-            <PenTool size={18} />
-          </button>
-
-          <button
-            onClick={() => setSoloToolMode('eraser')}
-            className={`p-2 rounded transition-colors ${toolMode === 'eraser' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-            title="Eraser"
-            data-testid="button-tool-eraser"
-          >
-            <Eraser size={18} />
-          </button>
-
-          <button
-            onClick={() => setSoloToolMode('shapes')}
-            className={`p-2 rounded transition-colors relative ${toolMode === 'shapes' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-            title="Shapes"
-            data-testid="button-tool-shapes"
-          >
-            <Box size={18} />
-            {toolMode === 'shapes' && (
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#1A1A1A] border border-white/20 rounded-lg shadow-lg p-1 flex gap-1">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShapeMode('rect'); }}
-                  className={`p-1.5 rounded ${shapeMode === 'rect' ? 'bg-blue-600/50' : 'hover:bg-white/10'}`}
-                  title="Rectangle"
-                  data-testid="button-shape-rect"
-                >
-                  <Square size={14} className="text-neutral-300" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShapeMode('circle'); }}
-                  className={`p-1.5 rounded ${shapeMode === 'circle' ? 'bg-blue-600/50' : 'hover:bg-white/10'}`}
-                  title="Circle"
-                  data-testid="button-shape-circle"
-                >
-                  <Circle size={14} className="text-neutral-300" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShapeMode('triangle'); }}
-                  className={`p-1.5 rounded ${shapeMode === 'triangle' ? 'bg-blue-600/50' : 'hover:bg-white/10'}`}
-                  title="Triangle"
-                  data-testid="button-shape-triangle"
-                >
-                  <Triangle size={14} className="text-neutral-300" />
-                </button>
-              </div>
-            )}
-          </button>
-
-          <button
-            onClick={() => setSoloToolMode('text')}
-            className={`p-2 rounded transition-colors ${toolMode === 'text' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-            title="Text"
-            data-testid="button-tool-text"
-          >
-            <Type size={18} />
-          </button>
-
-          <div className="h-6 w-px bg-white/10"></div>
-
-          <div className="flex items-center gap-2">
+          {/* Stroke Settings */}
+          <div className="flex items-center gap-3 bg-[#252525] px-4 py-1.5 rounded-lg border border-white/5">
             <input
               type="color"
               value={customColor}
               onChange={(e) => setCustomColor(e.target.value)}
-              className="w-8 h-8 rounded cursor-pointer border border-white/20"
+              className="w-7 h-7 rounded-md cursor-pointer border border-white/30"
               title="Color"
               data-testid="input-color"
             />
-            <div className="text-xs text-neutral-400">Stroke:</div>
-            <input
-              type="range"
-              min="1"
-              max="20"
-              value={strokeSize}
-              onChange={(e) => setStrokeSize(parseInt(e.target.value))}
-              className="w-24"
-              title="Stroke Size"
-              data-testid="input-stroke-size"
-            />
-            <span className="text-xs text-neutral-400 w-6">{strokeSize}px</span>
+            <div className="h-5 w-px bg-white/10"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-neutral-400 whitespace-nowrap">Size:</span>
+              <input
+                type="range"
+                min="1"
+                max="20"
+                value={strokeSize}
+                onChange={(e) => setStrokeSize(parseInt(e.target.value))}
+                className="w-20"
+                title="Stroke Size"
+                data-testid="input-stroke-size"
+              />
+              <span className="text-xs text-neutral-400 w-8 text-right">{strokeSize}px</span>
+            </div>
           </div>
         </div>
       </div>
