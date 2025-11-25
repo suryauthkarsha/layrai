@@ -13,7 +13,7 @@ const STORAGE_KEY = 'layr_projects_v3';
 function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   // Load projects from localStorage
   useEffect(() => {
@@ -71,7 +71,7 @@ function App() {
     setLocation('/');
   };
 
-  const activeProject = projects.find(p => p.id === activeProjectId);
+  const activeProject = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -93,8 +93,15 @@ function App() {
                 onBack={handleBackToHome}
               />
             ) : (
-              <div className="flex items-center justify-center h-screen bg-[#050505] text-white">
-                <p>No project selected</p>
+              <div className="flex items-center justify-center h-screen bg-[#050505] text-white flex-col gap-4">
+                <p className="text-xl font-semibold">No project selected</p>
+                <button 
+                  onClick={() => setLocation('/')} 
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white font-medium transition-colors"
+                  data-testid="button-return-home"
+                >
+                  Return to Home
+                </button>
               </div>
             )}
           </Route>
