@@ -2,8 +2,27 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { GoogleGenAI } from "@google/genai";
 import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth endpoint to get current user
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const user = await storage.getUser(userId);
+      res.json(user || null);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   // AI Generation API endpoint
   app.post("/api/generate-ui", async (req, res) => {
     try {

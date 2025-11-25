@@ -7,10 +7,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Project } from '@shared/schema';
 import Home from "@/pages/Home";
 import Editor from "@/pages/Editor";
+import Landing from "@/pages/Landing";
+import { useAuth } from "@/hooks/useAuth";
 
 const STORAGE_KEY = 'layr_projects_v3';
 
-function App() {
+function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [location, setLocation] = useLocation();
@@ -73,44 +76,62 @@ function App() {
 
   const activeProject = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#050505] text-white">
+        <p className="text-xl">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <Switch>
+      <Route path="/">
+        {isAuthenticated ? (
+          <Home 
+            projects={projects}
+            onCreate={handleCreateProject}
+            onDelete={handleDeleteProject}
+            onOpen={handleOpenProject}
+          />
+        ) : (
+          <Landing />
+        )}
+      </Route>
+      <Route path="/editor">
+        {activeProject ? (
+          <Editor 
+            project={activeProject}
+            onSave={handleSaveProject}
+            onBack={handleBackToHome}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-screen bg-[#050505] text-white flex-col gap-4">
+            <p className="text-xl font-semibold">No project selected</p>
+            <button 
+              onClick={() => setLocation('/')} 
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white font-medium transition-colors"
+              data-testid="button-return-home"
+            >
+              Return to Home
+            </button>
+          </div>
+        )}
+      </Route>
+      <Route>
+        <div className="flex items-center justify-center h-screen bg-[#050505] text-white">
+          <p>404 - Page Not Found</p>
+        </div>
+      </Route>
+    </Switch>
+  );
+}
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Switch>
-          <Route path="/">
-            <Home 
-              projects={projects}
-              onCreate={handleCreateProject}
-              onDelete={handleDeleteProject}
-              onOpen={handleOpenProject}
-            />
-          </Route>
-          <Route path="/editor">
-            {activeProject ? (
-              <Editor 
-                project={activeProject}
-                onSave={handleSaveProject}
-                onBack={handleBackToHome}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-screen bg-[#050505] text-white flex-col gap-4">
-                <p className="text-xl font-semibold">No project selected</p>
-                <button 
-                  onClick={() => setLocation('/')} 
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white font-medium transition-colors"
-                  data-testid="button-return-home"
-                >
-                  Return to Home
-                </button>
-              </div>
-            )}
-          </Route>
-          <Route>
-            <div className="flex items-center justify-center h-screen bg-[#050505] text-white">
-              <p>404 - Page Not Found</p>
-            </div>
-          </Route>
-        </Switch>
+        <Router />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
