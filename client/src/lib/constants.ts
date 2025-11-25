@@ -48,9 +48,9 @@ export const PRESET_THEMES = {
   },
 };
 
-// Platform dimensions
+// Platform dimensions - make horizontal as big as vertical for square canvas
 export const PLATFORM_DIMENSIONS = {
-  mobile: { width: 375, height: 812 },
-  desktop: { width: 1440, height: 900 },
-  general: { width: 1200, height: 800 },
+  mobile: { width: 812, height: 812 },
+  desktop: { width: 1440, height: 1440 },
+  general: { width: 1200, height: 1200 },
 } as const;

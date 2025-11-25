@@ -12,8 +12,9 @@ export function IframeRenderer({ htmlContent, isInteracting }: IframeRendererPro
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
-          body { margin: 0; padding: 0; background-color: #1e1e1e; color: white; overflow-x: hidden; width: 100%; height: 100%; }
+          body { margin: 0; padding: 32px 16px; background-color: #1e1e1e; color: white; overflow-x: hidden; width: 100%; height: 100%; box-sizing: border-box; }
           ::-webkit-scrollbar { width: 0px; background: transparent; }
+          html, body { width: 100%; height: 100%; }
       </style>
     </head>
     <body>

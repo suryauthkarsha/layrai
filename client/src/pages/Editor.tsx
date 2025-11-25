@@ -75,7 +75,11 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   // Keyboard pan support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && canvasRef.current) {
+      // Only enable space panning if focused on canvas, not in textarea
+      const activeElement = document.activeElement;
+      const isTextarea = activeElement?.tagName === 'TEXTAREA';
+      
+      if (e.code === 'Space' && canvasRef.current && !isTextarea) {
         e.preventDefault();
         setIsSpacePanning(true);
       }
@@ -509,15 +513,15 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               <div className="grid grid-cols-3 gap-1.5">
                 <button onClick={() => setPlatform('mobile')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'mobile' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-mobile">
                   <div className="text-xs font-semibold">Mobile</div>
-                  <div className="text-[10px] text-neutral-400">375x812</div>
+                  <div className="text-[10px] text-neutral-400">812x812</div>
                 </button>
                 <button onClick={() => setPlatform('desktop')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'desktop' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-desktop">
                   <div className="text-xs font-semibold">Desktop</div>
-                  <div className="text-[10px] text-neutral-400">1440x900</div>
+                  <div className="text-[10px] text-neutral-400">1440x1440</div>
                 </button>
                 <button onClick={() => setPlatform('general')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'general' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-general">
                   <div className="text-xs font-semibold">General</div>
-                  <div className="text-[10px] text-neutral-400">1200x800</div>
+                  <div className="text-[10px] text-neutral-400">1200x1200</div>
                 </button>
               </div>
             </div>
@@ -701,7 +705,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   </div>
                 </div>
                 <div 
-                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[375px] rounded-[50px]' : platform === 'desktop' ? 'w-[1440px] rounded-xl' : 'w-[1200px] rounded-xl'}`} 
+                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[812px] rounded-[50px]' : platform === 'desktop' ? 'w-[1440px] rounded-xl' : 'w-[1200px] rounded-xl'}`} 
                   style={{ height: getFrameHeight() + 'px' }}
                 >
                   {platform === 'mobile' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a1a] rounded-b-xl z-20 pointer-events-none"></div>}
