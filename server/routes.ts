@@ -98,14 +98,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 function getSystemPrompt(screenCount: number, platform: string, features: string[], imageUrls: string[] = []) {
   const imageExamples = imageUrls.length > 0 
-    ? `\nREAL IMAGE URLS TO USE (pick from these, use multiple times if needed):\n${imageUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}`
+    ? `\n**REAL IMAGE URLS TO USE (MUST USE THESE - copy and paste exactly):**\n${imageUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}\n\nYOU MUST USE THESE EXACT URLS IN <img> TAGS - DO NOT MODIFY THEM.`
     : '';
   
   return `
-You are a specialized UI Generator that creates beautiful, realistic designs with proper imagery.
+You are a specialized UI Generator that creates beautiful, realistic designs with REQUIRED imagery.
 TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/Tailwind CSS based on the user's prompt.
 
-**CRITICAL RULES:**
+**CRITICAL RULES - MUST FOLLOW:**
 1. **OUTPUT RAW HTML ONLY.** Do not wrap in JSON. Use Markdown code blocks ONLY for readability: \`\`\`html ... \`\`\`.
 2. **FORMAT:** Generate ${screenCount} DISTINCT screens. Wrap each screen's HTML code in a standard Markdown code block like this:
    
@@ -116,30 +116,27 @@ TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/T
    </div>
    \`\`\`
    
-3. **IMAGES - MANDATORY IN EVERY DESIGN:** ALWAYS include realistic images in your designs. DO NOT skip images.
-   - Use the provided real image URLs from Pexels (see list below)
-   - OR use CSS gradients with visual interest (linear-gradient, radial-gradient)
-   - OR use SVG icons and illustrations (embed them as <svg> tags, not img)
-   - NEVER create empty <img> tags or placeholder divs without content
-   - EVERY design should have at least 1-3 images/visual assets
+3. **IMAGES - 100% MANDATORY, NEVER SKIP:**
+   - YOU MUST INCLUDE 2-4 IMAGES IN EVERY SCREEN using the provided Pexels URLs below
+   - Use REAL image URLs provided below - do not make up URLs or use empty src attributes
+   - Place images prominently in the design (hero section, cards, backgrounds)
+   - Example: <img src="https://images.pexels.com/photos/..." class="w-full h-64 object-cover rounded-lg" alt="description" />
+   - OR use CSS gradients: <div class="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+   - OR use SVG icons inline
+   - ABSOLUTELY NO empty img tags, NO missing src attributes, NO placeholder divs
+   - If you don't include images, the design is INCOMPLETE and REJECTED
+
 4. **LAYOUT:** The root div MUST have 'w-full h-full min-h-screen' to fill the frame.
-5. **CONTENT:** Make it look realistic. Fill text with relevant placeholders. Add depth with shadows and layering.
+5. **CONTENT:** Make it look realistic. Fill text with relevant content. Add depth with shadows and layering.
 6. **STYLING:** Use Tailwind CSS extensively. Include hover effects, transitions, and visual polish.
 7. **NO JAVASCRIPT.** Pure HTML/CSS structure only.
 
 User Prompt Context: ${platform} Application.
 FEATURES: ${features.join(', ') || 'Modern UI'}.
 
-**EXAMPLE GOOD IMAGE USAGE:**
-<img src="https://images.pexels.com/photos/..." alt="Hero image" class="w-full h-64 object-cover rounded-lg" />
-<div class="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg"></div>
-
-**EXAMPLE BAD (AVOID):**
-<img src="" alt="placeholder" /> <!-- NEVER DO THIS -->
-<div></div> <!-- Empty divs are boring -->
-
 ${imageExamples}
 
-Make your designs STUNNING with proper imagery.
+**WARNING:** Every <img> tag MUST have a valid src URL. Empty img tags or placeholder divs will cause rejection.
+Make your designs STUNNING with beautiful, real imagery.
 `;
 }

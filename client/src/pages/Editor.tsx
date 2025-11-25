@@ -179,9 +179,13 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       const padding = 500;
 
       setTimeout(() => {
-        const horizontalScrollTarget = padding - (el.clientWidth / 2) + (screenWidth / 2);
-        el.scrollTop = padding - (el.clientHeight / 2) + (screenHeight / 2);
+        // Center horizontally and position below top bar
+        const screenPaddedWidth = screenWidth + 16; // account for border
+        const horizontalScrollTarget = padding - (el.clientWidth / 2) + (screenPaddedWidth / 2);
+        const verticalScrollTarget = padding - (el.clientHeight / 2) + (screenHeight / 2) - 100;
+        
         el.scrollLeft = horizontalScrollTarget;
+        el.scrollTop = Math.max(padding - 200, verticalScrollTarget);
       }, 50);
     }
   }, [generatedScreens.length]);
@@ -544,7 +548,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               <div className="relative p-6 rounded-xl bg-[#1A1A1A]/95 border border-blue-500/50 backdrop-blur-lg shadow-2xl shadow-blue-900/50 z-[40] flex flex-col items-center gap-2">
                 <Loader2 className="animate-spin text-blue-400" size={24} />
                 <p className="text-lg font-bold text-white tracking-wider">
-                  UI Completion: <span className="text-blue-400" data-testid="text-generation-progress">{generationProgress}%</span>
+                  UI Completion: <span className="text-blue-400" data-testid="text-generation-progress">{Math.round(generationProgress)}%</span>
                 </p>
               </div>
             </div>
@@ -557,8 +561,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               transform: `scale(${zoom})`, 
               minWidth: 'fit-content', 
               minHeight: 'fit-content', 
-              padding: '500px', 
-              paddingTop: '200px', 
+              padding: '800px 500px', 
               margin: 'auto', 
               gap: '200px' 
             }}
