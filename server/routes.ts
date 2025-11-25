@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { GoogleGenAI } from "@google/genai";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { getPexelsImagesUrls } from "./lib/pexels";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -42,7 +43,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const keyEnd = apiKey.substring(apiKey.length - 5);
       console.log(`[API] Using GEMINI_API_KEY (${keyStart}...${keyEnd})`);
 
-      const systemPrompt = getSystemPrompt(screenCount || 1, platform || 'mobile', []);
+      // Fetch real images from Pexels
+      const imageKeywords = ['abstract', 'modern', 'minimalist', 'technology', 'design', 'colorful', 'elegant', 'professional'];
+      const selectedKeywords = imageKeywords.slice(0, Math.min(3, screenCount || 1));
+      const imageUrls = await getPexelsImagesUrls(selectedKeywords);
+      
+      const systemPrompt = getSystemPrompt(screenCount || 1, platform || 'mobile', [], imageUrls);
 
       const ai = new GoogleGenAI({ apiKey });
       const geminiResponse = await ai.models.generateContent({
@@ -90,7 +96,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-function getSystemPrompt(screenCount: number, platform: string, features: string[]) {
+function getSystemPrompt(screenCount: number, platform: string, features: string[], imageUrls: string[] = []) {
+  const imageExamples = imageUrls.length > 0 
+    ? `\nREAL IMAGE URLS TO USE (pick from these, use multiple times if needed):\n${imageUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}`
+    : '';
+  
   return `
 You are a specialized UI Generator that creates beautiful, realistic designs with proper imagery.
 TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/Tailwind CSS based on the user's prompt.
@@ -107,8 +117,8 @@ TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/T
    \`\`\`
    
 3. **IMAGES - MANDATORY IN EVERY DESIGN:** ALWAYS include realistic images in your designs. DO NOT skip images.
-   - Use Unsplash URLs: 'https://source.unsplash.com/random/800x600/?keyword' (with relevant keywords)
-   - OR use CSS gradients with visual interest
+   - Use the provided real image URLs from Pexels (see list below)
+   - OR use CSS gradients with visual interest (linear-gradient, radial-gradient)
    - OR use SVG icons and illustrations (embed them as <svg> tags, not img)
    - NEVER create empty <img> tags or placeholder divs without content
    - EVERY design should have at least 1-3 images/visual assets
@@ -121,11 +131,14 @@ User Prompt Context: ${platform} Application.
 FEATURES: ${features.join(', ') || 'Modern UI'}.
 
 **EXAMPLE GOOD IMAGE USAGE:**
-<img src="https://source.unsplash.com/random/800x600/?landscape" alt="Hero image" class="w-full h-64 object-cover rounded-lg" />
+<img src="https://images.pexels.com/photos/..." alt="Hero image" class="w-full h-64 object-cover rounded-lg" />
+<div class="w-full h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg"></div>
 
 **EXAMPLE BAD (AVOID):**
 <img src="" alt="placeholder" /> <!-- NEVER DO THIS -->
 <div></div> <!-- Empty divs are boring -->
+
+${imageExamples}
 
 Make your designs STUNNING with proper imagery.
 `;

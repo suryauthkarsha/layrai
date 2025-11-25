@@ -415,15 +415,24 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     <div className="flex h-screen w-full bg-[#050505] text-neutral-200 font-sans overflow-hidden selection:bg-blue-500/30">
       <style>{`
         @keyframes subtle-pulse { 0%, 100% { box-shadow: 0 0 100px 50px rgba(59, 130, 246, 0.05); } 50% { box-shadow: 0 0 150px 80px rgba(59, 130, 246, 0.15); } }
-        @keyframes blue-glow { 0%, 100% { box-shadow: inset 0 0 30px rgba(59, 130, 246, 0.2), 0 0 60px rgba(59, 130, 246, 0.3); } 50% { box-shadow: inset 0 0 50px rgba(59, 130, 246, 0.4), 0 0 100px rgba(59, 130, 246, 0.5); } }
+        @keyframes blue-glow { 
+          0%, 100% { 
+            box-shadow: inset 0 0 40px rgba(59, 130, 246, 0.6), 0 0 80px rgba(59, 130, 246, 0.8), 0 0 120px rgba(59, 130, 246, 0.6);
+            border-color: rgba(59, 130, 246, 1);
+          } 
+          50% { 
+            box-shadow: inset 0 0 80px rgba(59, 130, 246, 1), 0 0 150px rgba(59, 130, 246, 1), 0 0 200px rgba(59, 130, 246, 0.8);
+            border-color: rgba(59, 130, 246, 1);
+          } 
+        }
         #drawing-layer { 
           mix-blend-mode: normal;
           pointer-events: auto;
         }
         .canvas-drawing { mix-blend-mode: normal; }
         .viewport-generating {
-          animation: blue-glow 2s ease-in-out infinite;
-          border: 2px solid rgba(59, 130, 246, 0.6);
+          animation: blue-glow 1.5s ease-in-out infinite;
+          border: 3px solid rgba(59, 130, 246, 0.8);
         }
       `}</style>
 
@@ -540,7 +549,19 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               gap: '200px' 
             }}
           >
-            <svg id="drawing-layer" className="canvas-drawing absolute inset-0 w-full h-full overflow-visible z-40" style={{ minWidth: '100%', minHeight: '100%', pointerEvents: isDrawingToolActive ? 'auto' : 'none' }}>
+            <svg id="drawing-layer" className="canvas-drawing absolute inset-0 overflow-visible z-40" 
+              style={{ 
+                minWidth: '100%', 
+                minHeight: '100%',
+                pointerEvents: isDrawingToolActive ? 'auto' : 'none',
+                left: 0,
+                top: 0,
+                width: '100%',
+                height: '100%'
+              }}
+              viewBox="0 0 10000 10000"
+              preserveAspectRatio="none"
+            >
               {drawings.map((d, i) => 
                 d.isEraser ? (
                   <circle 
