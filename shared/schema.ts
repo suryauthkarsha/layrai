@@ -1,18 +1,42 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// --- AI Layr Data Schemas ---
+
+// Drawing stroke schema
+export const drawingSchema = z.object({
+  color: z.string(),
+  points: z.array(z.object({ x: z.number(), y: z.number() })),
+  strokeWidth: z.number(),
+  isEraser: z.boolean().optional(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+// Screen schema
+export const screenSchema = z.object({
+  name: z.string(),
+  rawHtml: z.string(),
+  type: z.string(),
+  height: z.number(),
+  x: z.number().optional().default(0),
+  y: z.number().optional().default(0),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+// Project schema
+export const projectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  updatedAt: z.number(),
+  data: z.object({
+    screens: z.array(screenSchema),
+  }),
+});
+
+// Insert schemas (for creating new items)
+export const insertScreenSchema = screenSchema.omit({ x: true, y: true });
+export const insertProjectSchema = projectSchema.omit({ id: true });
+
+// TypeScript types
+export type Drawing = z.infer<typeof drawingSchema>;
+export type Screen = z.infer<typeof screenSchema>;
+export type Project = z.infer<typeof projectSchema>;
+export type InsertScreen = z.infer<typeof insertScreenSchema>;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
