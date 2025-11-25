@@ -480,7 +480,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
       {/* Sidebar */}
       {activePanel === 'generate' && (
-        <div className="w-80 bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
+        <div className="w-96 sm:w-80 md:w-96 max-w-xs bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-white/10">
             <h2 className="text-xs font-bold text-white" data-testid="heading-generate">Generate UI</h2>
             <button onClick={() => setActivePanel(null)} className="p-1 hover:bg-white/10 rounded" data-testid="button-close-panel">
@@ -541,31 +541,31 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       {/* Main Editor */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar - Floating Glass */}
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/30 border border-white/5 rounded-2xl shadow-2xl px-6 py-3 flex items-center justify-between gap-6">
-          <button onClick={onBack} className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all" data-testid="button-back">
-            <ArrowLeft size={18} />
+        <div className="fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/30 border border-white/5 rounded-2xl shadow-2xl px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-6 flex-wrap max-w-[95vw]">
+          <button onClick={onBack} className="p-1.5 sm:p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all" data-testid="button-back">
+            <ArrowLeft size={14} className="sm:w-[18px] sm:h-[18px]" />
           </button>
 
-          <div className="flex items-center gap-3 px-2 py-1">
-            <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} className="p-1.5 text-neutral-400 hover:text-white" data-testid="button-zoom-out">
-              <ZoomOut size={16} />
+          <div className="hidden sm:flex items-center gap-3 px-2 py-1">
+            <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} className="p-1 sm:p-1.5 text-neutral-400 hover:text-white" data-testid="button-zoom-out">
+              <ZoomOut size={12} className="sm:w-[16px] sm:h-[16px]" />
             </button>
-            <span className="text-sm text-neutral-300 w-10 text-center font-medium" data-testid="text-zoom">{Math.round(zoom * 100)}%</span>
-            <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} className="p-1.5 text-neutral-400 hover:text-white" data-testid="button-zoom-in">
-              <ZoomIn size={16} />
+            <span className="text-xs sm:text-sm text-neutral-300 w-8 sm:w-10 text-center font-medium" data-testid="text-zoom">{Math.round(zoom * 100)}%</span>
+            <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} className="p-1 sm:p-1.5 text-neutral-400 hover:text-white" data-testid="button-zoom-in">
+              <ZoomIn size={12} className="sm:w-[16px] sm:h-[16px]" />
             </button>
           </div>
 
-          <button onClick={handleGenerateClick} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all flex items-center gap-2 shadow-lg" data-testid="button-generate-panel">
-            <Sparkles size={16} />
-            Generate
+          <button onClick={handleGenerateClick} className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all flex items-center gap-1 sm:gap-2 shadow-lg whitespace-nowrap" data-testid="button-generate-panel">
+            <Sparkles size={12} className="sm:w-[16px] sm:h-[16px]" />
+            <span className="hidden sm:inline">Generate</span>
           </button>
 
           <div className="relative">
-            <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="px-4 py-2 text-sm font-medium text-neutral-300 hover:text-white bg-neutral-800/50 hover:bg-neutral-700/50 rounded-lg transition-all flex items-center gap-2" data-testid="button-export">
-              <Download size={16} />
-              Export
-              <ChevronDown size={14} />
+            <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium text-neutral-300 hover:text-white bg-neutral-800/50 hover:bg-neutral-700/50 rounded-lg transition-all flex items-center gap-1 sm:gap-2 whitespace-nowrap" data-testid="button-export">
+              <Download size={12} className="sm:w-[16px] sm:h-[16px]" />
+              <span className="hidden sm:inline">Export</span>
+              <ChevronDown size={10} className="hidden sm:inline sm:w-[14px] sm:h-[14px]" />
             </button>
             {exportMenuOpen && (
               <div className="absolute top-full right-0 mt-2 w-44 bg-black/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
@@ -585,8 +585,8 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             )}
           </div>
 
-          <button onClick={undo} disabled={history.length === 0} className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 disabled:text-neutral-600 disabled:hover:bg-transparent transition-all" data-testid="button-undo">
-            <RotateCcw size={18} />
+          <button onClick={undo} disabled={history.length === 0} className="hidden sm:flex p-1.5 sm:p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 disabled:text-neutral-600 disabled:hover:bg-transparent transition-all" data-testid="button-undo">
+            <RotateCcw size={14} className="sm:w-[18px] sm:h-[18px]" />
           </button>
         </div>
         
@@ -731,26 +731,26 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         </div>
 
         {/* Bottom Toolbar - Floating Glass */}
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/30 border border-white/5 rounded-2xl shadow-2xl px-4 py-3 flex items-center justify-center gap-3">
-          <button onClick={() => setSoloToolMode('cursor')} className={`p-2.5 rounded-lg transition-all ${toolMode === 'cursor' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-cursor">
-            <MousePointer2 size={18} />
+        <div className="fixed bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/30 border border-white/5 rounded-2xl shadow-2xl px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-center gap-1 sm:gap-3 flex-wrap max-w-[95vw]">
+          <button onClick={() => setSoloToolMode('cursor')} className={`p-1.5 sm:p-2.5 rounded-lg transition-all ${toolMode === 'cursor' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-cursor">
+            <MousePointer2 size={14} className="sm:w-[18px] sm:h-[18px]" />
           </button>
 
-          <button onClick={() => setSoloToolMode('hand')} className={`p-2.5 rounded-lg transition-all ${toolMode === 'hand' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-hand">
-            <Hand size={18} />
+          <button onClick={() => setSoloToolMode('hand')} className={`p-1.5 sm:p-2.5 rounded-lg transition-all ${toolMode === 'hand' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-hand">
+            <Hand size={14} className="sm:w-[18px] sm:h-[18px]" />
           </button>
 
-          <button onClick={() => setSoloToolMode('eraser')} className={`p-2.5 rounded-lg transition-all ${toolMode === 'eraser' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-eraser">
-            <Eraser size={18} />
+          <button onClick={() => setSoloToolMode('eraser')} className={`p-1.5 sm:p-2.5 rounded-lg transition-all ${toolMode === 'eraser' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-eraser">
+            <Eraser size={14} className="sm:w-[18px] sm:h-[18px]" />
           </button>
 
-          <button onClick={() => setSoloToolMode('pen')} className={`p-2.5 rounded-lg transition-all ${toolMode === 'pen' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-pen">
-            <PenTool size={18} />
+          <button onClick={() => setSoloToolMode('pen')} className={`p-1.5 sm:p-2.5 rounded-lg transition-all ${toolMode === 'pen' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-pen">
+            <PenTool size={14} className="sm:w-[18px] sm:h-[18px]" />
           </button>
 
           <div className="relative">
-            <button onClick={() => setSoloToolMode('shapes')} className={`p-2.5 rounded-lg transition-all ${toolMode === 'shapes' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-shapes">
-              <Box size={18} />
+            <button onClick={() => setSoloToolMode('shapes')} className={`p-1.5 sm:p-2.5 rounded-lg transition-all ${toolMode === 'shapes' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-shapes">
+              <Box size={14} className="sm:w-[18px] sm:h-[18px]" />
             </button>
             {toolMode === 'shapes' && (
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl p-2 flex gap-1.5">
@@ -767,21 +767,21 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             )}
           </div>
 
-          <button onClick={() => setSoloToolMode('text')} className={`p-2.5 rounded-lg transition-all ${toolMode === 'text' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-text">
-            <Type size={18} />
+          <button onClick={() => setSoloToolMode('text')} className={`p-1.5 sm:p-2.5 rounded-lg transition-all ${toolMode === 'text' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-text">
+            <Type size={14} className="sm:w-[18px] sm:h-[18px]" />
           </button>
 
-          <button onClick={undo} disabled={history.length === 0} className="p-2.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 disabled:text-neutral-600 disabled:hover:bg-transparent transition-all" data-testid="button-undo">
-            <RotateCcw size={18} />
+          <button onClick={undo} disabled={history.length === 0} className="hidden sm:flex p-1.5 sm:p-2.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 disabled:text-neutral-600 disabled:hover:bg-transparent transition-all" data-testid="button-undo">
+            <RotateCcw size={14} className="sm:w-[18px] sm:h-[18px]" />
           </button>
 
-          <button onClick={() => colorInputRef.current?.click()} className="p-2.5 rounded-full transition-all border-2 border-white/20 hover:border-white/40" style={{ backgroundColor: customColor }} title="Click to change color" data-testid="button-color-picker">
+          <button onClick={() => colorInputRef.current?.click()} className="p-1.5 sm:p-2.5 rounded-full transition-all border-2 border-white/20 hover:border-white/40" style={{ backgroundColor: customColor, width: '24px', height: '24px' }} title="Click to change color" data-testid="button-color-picker">
           </button>
           <input ref={colorInputRef} type="color" value={customColor} onChange={(e) => setCustomColor(e.target.value)} className="hidden" data-testid="input-color-hidden" />
 
           <div className="relative">
-            <button onClick={() => setShowStrokeSize(!showStrokeSize)} className="p-2.5 rounded-lg transition-all text-neutral-400 hover:text-white hover:bg-white/10" data-testid="button-stroke-toggle">
-              <span className="text-xs font-semibold">{strokeSize}px</span>
+            <button onClick={() => setShowStrokeSize(!showStrokeSize)} className="p-1.5 sm:p-2.5 rounded-lg transition-all text-neutral-400 hover:text-white hover:bg-white/10" data-testid="button-stroke-toggle">
+              <span className="text-[10px] sm:text-xs font-semibold">{strokeSize}px</span>
             </button>
             {showStrokeSize && (
               <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl p-3 flex flex-col gap-2">
