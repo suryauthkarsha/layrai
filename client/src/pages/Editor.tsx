@@ -50,7 +50,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [textBoxes, setTextBoxes] = useState<Array<{ id: string; x: number; y: number; text: string }>>([]);
   const [shapes, setShapes] = useState<Array<{ id: string; type: 'rect' | 'circle' | 'triangle'; x: number; y: number; width: number; height: number; color: string }>>([]);
   const [shapePreview, setShapePreview] = useState<{ x: number; y: number } | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState(500);
+  const [sidebarWidth, setSidebarWidth] = useState(450);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -100,7 +100,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingSidebar) return;
       // Calculate width from left edge (0) to current mouse position
-      const newWidth = Math.max(350, Math.min(800, Math.max(0, e.clientX)));
+      const newWidth = Math.max(300, Math.min(750, Math.max(0, e.clientX)));
       setSidebarWidth(newWidth);
     };
 
@@ -719,7 +719,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           >
             {/* Initial placeholder */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
+              <div className="fixed top-32 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
                 <div className="w-24 h-24 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center shadow-2xl shadow-blue-500/20 animate-pulse">
                   <Wand2 size={36} className="text-blue-400" />
                 </div>
