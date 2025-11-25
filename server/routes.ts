@@ -87,7 +87,7 @@ TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/T
    </div>
    \`\`\`
    
-3. **IMAGES:** Use 'https://source.unsplash.com/random/800x600/?keyword' (replace keyword) or CSS gradients. NEVER leave src empty.
+3. **IMAGES:** NEVER use empty img placeholders. For images, ONLY use: (a) Unsplash URLs like 'https://source.unsplash.com/random/800x600/?keyword', (b) CSS background gradients, or (c) text/emoji content inside divs. If using img tags, they MUST have valid src. Never create empty <img> tags.
 4. **LAYOUT:** The root div MUST have 'w-full h-full min-h-screen' to fill the frame.
 5. **CONTENT:** Make it look realistic. Fill text with relevant placeholders.
 6. **NO JAVASCRIPT.** Pure HTML/CSS structure.
