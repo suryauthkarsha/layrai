@@ -12,13 +12,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Prompt is required" });
       }
 
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY?.trim();
       if (!apiKey) {
         return res.status(500).json({ error: "API key not configured" });
       }
 
-      // Log key validation (without exposing the full key)
-      console.log(`[API] Using GEMINI_API_KEY (${apiKey.substring(0, 8)}...)`);
+      // Log key validation with more detail
+      const keyStart = apiKey.substring(0, 15);
+      const keyEnd = apiKey.substring(apiKey.length - 5);
+      console.log(`[API] Using GEMINI_API_KEY (${keyStart}...${keyEnd})`);
 
       const systemPrompt = getSystemPrompt(screenCount || 1, platform || 'mobile', []);
 
