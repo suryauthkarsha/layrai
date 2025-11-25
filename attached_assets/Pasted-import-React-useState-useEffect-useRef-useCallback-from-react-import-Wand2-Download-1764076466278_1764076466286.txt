@@ -1,0 +1,810 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { 
+  Wand2, Download, Layout, Type, RefreshCw,
+  Zap, Layers, Code, MousePointer2, ZoomIn, ZoomOut,
+  ArrowRight, Sparkles, X, Check,
+  Smartphone, Monitor, Palette, Plus, Minus,
+  TrendingUp, Menu, PanelLeftClose, PanelLeftOpen, Box, Image as ImageIcon,
+  Trash2, MoveVertical, LayoutTemplate, FileCode, FileImage, FileText, ChevronDown,
+  Camera, Printer, Square, PenTool, Hand, RotateCcw, ArrowLeft, UploadCloud, Eraser, MinusCircle, PlusCircle,
+  Loader2 
+} from 'lucide-react';
+
+// --- Configuration ---
+
+const GEMINI_API_KEY = ""; 
+
+// --- Assets & Constants ---
+
+// Using the stable, externally hosted image URL
+const HERO_IMAGE_URL = "https://i.ibb.co/TB7TwKbS/Gemini-Generated-Image_fqobwbfqobwbfqob.png";
+const HERO_BACKGROUND_GRADIENT = "linear-gradient(135deg, #2c3e50, #3498db, #8e44ad)"; 
+
+const UNSPLASH_COLLECTION = [
+  { id: 'abs1', url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit-crop", category: "Abstract" },
+  { id: 'arch1', url: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400&auto=format&fit-crop", category: "Building" },
+  { id: 'tech1', url: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=400&auto=format&fit-crop", category: "Tech" },
+  { id: 'nat1', url: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=400&auto=format&fit-crop", category: "Nature" },
+  { id: 'ppl1', url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit-crop", category: "People" },
+];
+
+const PRESET_THEMES = {
+  modern: { name: "Obsidian", primary: "bg-blue-600", secondary: "bg-[#09090b]", text: "text-slate-50", textDim: "text-slate-400", accent: "text-blue-400", border: "border-white/10", surface: "bg-white/5", gradient: "from-blue-600 to-indigo-600" },
+  emerald: { name: "Forest", primary: "bg-emerald-600", secondary: "bg-[#050a05]", text: "text-stone-50", textDim: "text-stone-400", accent: "text-emerald-400", border: "border-white/10", surface: "bg-white/5", gradient: "from-emerald-600 to-teal-600" },
+  rose: { name: "Velvet", primary: "bg-rose-600", secondary: "bg-[#0a0505]", text: "text-neutral-50", textDim: "text-neutral-400", accent: "text-rose-400", border: "border-white/10", surface: "bg-white/5", gradient: "from-rose-600 to-pink-600" },
+};
+
+const COMPONENT_OPTIONS = [
+  { id: 'hero', label: 'Hero', icon: <Sparkles size={12} /> },
+  { id: 'grid', label: 'Grid', icon: <Layout size={12} /> },
+  { id: 'carousel', label: 'Carousel', icon: <MoveVertical size={12} className="rotate-90" /> },
+  { id: 'stats', label: 'Stats', icon: <TrendingUp size={12} /> },
+];
+
+// --- Utility Functions (External) ---
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const fetchWithRetry = async (url, options, retries = 3) => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (response.ok) return response;
+            if (response.status >= 500 || response.status === 429) {
+                if (i < retries - 1) { await delay(Math.pow(2, i) * 1000 + Math.random() * 1000); continue; }
+            }
+            throw new Error(`API Error: ${response.status}`);
+        } catch (error) {
+            if (i < retries - 1) { await delay(Math.pow(2, i) * 1000); continue; }
+            throw error;
+        }
+    }
+};
+
+const exportPDF = async (elementId, filename) => {
+  // Check if scripts are loaded internally
+  if (!window.jspdf) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+  const { jsPDF } = window.jspdf;
+  const canvas = await captureElement(elementId, 2);
+  if (!canvas) return;
+  const imgData = canvas.toDataURL('image/jpeg', 1.0);
+  const pdf = new jsPDF({ orientation: canvas.width > canvas.height ? 'l' : 'p', unit: 'px', format: [canvas.width, canvas.height] });
+  pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+  pdf.save(`${filename}.pdf`);
+};
+
+const captureElement = async (elementId, scaleFactor = 3, fullViewport = false) => {
+  // Check if scripts are loaded internally
+  if (!window.html2canvas) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+  const options = { backgroundColor: '#050505', scale: scaleFactor, useCORS: true, logging: false };
+  if (fullViewport) {
+      const element = document.querySelector('.viewport-container');
+      if (!element) return null;
+      return window.html2canvas(element, { ...options, x: element.scrollLeft, y: element.scrollTop, width: element.clientWidth, height: element.clientHeight, windowWidth: element.clientWidth, windowHeight: element.clientHeight });
+  } else {
+      const element = document.getElementById(elementId);
+      if (!element) return null;
+      return window.html2canvas(element, options);
+  }
+};
+
+const loadScript = (src) => new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = src; script.onload = resolve; script.onerror = reject; document.head.appendChild(script);
+});
+
+// --- System Prompt ---
+
+const getSystemPrompt = (screenCount, platform, features) => `
+You are a specialized UI Generator.
+TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/Tailwind CSS based on the user's prompt.
+
+**RULES:**
+1. **OUTPUT RAW HTML ONLY.** Do not wrap in JSON. Use Markdown code blocks ONLY for readability: \`\`\`html ... \`\`\`.
+2. **FORMAT:** Generate ${screenCount} DISTINCT screens. Wrap each screen's HTML code in a standard Markdown code block like this:
+   
+   \`\`\`html
+   <!-- Screen: [A Unique Name for Screen] -->
+   <div class="w-full h-full min-h-screen bg-white [styles]">
+      ... content ...
+   </div>
+   \`\`\`
+   
+3. **IMAGES:** Use 'https://source.unsplash.com/random/800x600/?keyword' (replace keyword) or CSS gradients. NEVER leave src empty.
+4. **LAYOUT:** The root div MUST have 'w-full h-full min-h-screen' to fill the frame.
+5. **CONTENT:** Make it look realistic. Fill text with relevant placeholders.
+6. **NO JAVASCRIPT.** Pure HTML/CSS structure.
+
+User Prompt Context: ${platform} Application.
+FEATURES: ${features.join(', ') || 'Modern UI'}.
+`;
+
+// --- Components (Iframe Renderer) ---
+
+const IframeRenderer = ({ htmlContent, isInteracting }) => {
+    const srcDoc = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            body { margin: 0; padding: 0; background-color: #1e1e1e; color: white; overflow-x: hidden; width: 100%; height: 100%; }
+            /* Scrollbar hiding */
+            ::-webkit-scrollbar { width: 0px; background: transparent; }
+        </style>
+      </head>
+      <body>
+        ${htmlContent || '<div class="flex items-center justify-center h-screen text-white/50 font-sans">Waiting for design...</div>'}
+      </body>
+      </html>
+    `;
+
+    return (
+        <div className="w-full h-full relative bg-neutral-900">
+            <iframe 
+                srcDoc={srcDoc}
+                className="w-full h-full border-none block"
+                title="Generated UI"
+                sandbox="allow-scripts" 
+                style={{ pointerEvents: isInteracting ? 'none' : 'auto' }} 
+            />
+            {/* Overlay to intercept clicks during panning */}
+            <div className={`absolute inset-0 z-50 ${isInteracting ? 'block' : 'hidden'}`}></div>
+        </div>
+    );
+};
+
+// --- EDITOR COMPONENT ---
+const Editor = ({ project, onSave, onBack }) => {
+  const [prompt, setPrompt] = useState('');
+  const [activePanel, setActivePanel] = useState(null); 
+  const [platform, setPlatform] = useState('mobile');
+  const [activeScreenIndex, setActiveScreenIndex] = useState(0);
+  
+  // Initialize as empty array, no default screen
+  const [generatedScreens, setGeneratedScreens] = useState(project.data.screens || []);
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [toolMode, setToolMode] = useState('cursor');
+  const [drawings, setDrawings] = useState([]);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [strokeSize, setStrokeSize] = useState(4); 
+  const [history, setHistory] = useState([]); 
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
+  const [zoom, setZoom] = useState(0.85);
+  const [exportMenuOpen, setExportMenuOpen] = useState(null);
+  const [customColor, setCustomColor] = useState('#3b82f6'); // State needed for drawing color
+  const [screenCount, setScreenCount] = useState(1); // State for screen count input
+  const [isDraggingScreen, setIsDraggingScreen] = useState(false); // State for screen dragging
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 }); // State for drag offset
+
+  const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const sidebarIsOpened = !!activePanel;
+  const sidebarWidth = 288;
+  
+  // Derived state
+  const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser';
+  const isInteracting = isPanning || isDrawingToolActive || isDraggingScreen;
+
+  // UI Positioning: Center over visible workspace
+  const fixedUILeft = sidebarIsOpened ? `calc(50% + 144px)` : '50%'; // Mathematically correct center
+  const fixedUIStyle = {
+    position: 'fixed',
+    left: fixedUILeft,
+    transform: 'translateX(-50%)',
+    transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    zIndex: 100 
+  };
+
+  const getFixedScreenHeight = useCallback(() => platform === 'mobile' ? 812 : (platform === 'general' ? 800 : 900), [platform]);
+  const getFrameHeight = () => getFixedScreenHeight();
+  const getFrameWidth = () => platform === 'mobile' ? 375 : (platform === 'general' ? 1200 : 1440);
+  
+  // --- Undo Logic ---
+  const saveStateToHistory = (newState) => {
+    if (generatedScreens) {
+        setHistory(prev => [...prev.slice(-19), JSON.stringify(generatedScreens)]);
+    }
+    setGeneratedScreens(newState);
+  };
+
+  const undo = () => {
+    if (history.length === 0) return;
+    const previousState = JSON.parse(history[history.length - 1]);
+    setHistory(prev => prev.slice(0, -1));
+    setGeneratedScreens(previousState);
+  };
+  // --- End Undo Logic ---
+
+  // --- Mouse Handlers (Correctly placed and consolidated) ---
+  const handleDragStart = useCallback((e, screenIndex) => {
+    if (toolMode !== 'cursor' || isPanning) return;
+    e.preventDefault();
+    setIsDraggingScreen(true);
+    setActiveScreenIndex(screenIndex);
+
+    const screenElement = e.currentTarget;
+    const rect = screenElement.getBoundingClientRect();
+    
+    const offsetX = (e.clientX - rect.left) / zoom;
+    const offsetY = (e.clientY - rect.top) / zoom;
+    
+    setDragOffset({ x: offsetX, y: offsetY });
+  }, [toolMode, isPanning, zoom]);
+
+  const handleMouseMove = (e) => {
+      if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser')) {
+          const rect = document.getElementById('drawing-layer').getBoundingClientRect();
+          const x = (e.clientX - rect.left) / zoom;
+          const y = (e.clientY - rect.top) / zoom;
+          setDrawings(prev => {
+             const last = prev[prev.length-1];
+             const updated = { ...last, points: [...last.points, {x, y}] };
+             return [...prev.slice(0, -1), updated];
+          });
+          return;
+      }
+      if (isPanning && canvasRef.current) {
+          canvasRef.current.scrollLeft = scrollStart.left - (e.clientX - panStart.x);
+          canvasRef.current.scrollTop = scrollStart.top - (e.clientY - panStart.y);
+      }
+  };
+
+  const handleMouseUp = () => {
+      if (isDraggingScreen) {
+          saveStateToHistory(generatedScreens);
+      }
+      
+      setIsPanning(false);
+      setIsDrawing(false);
+      setIsDraggingScreen(false);
+      
+      if (toolMode === 'pen' || toolMode === 'eraser') setToolMode('cursor');
+  };
+  // --- End Mouse Handlers ---
+
+  useEffect(() => {
+      onSave({
+          ...project,
+          updatedAt: Date.now(),
+          data: { screens: generatedScreens }
+      });
+  }, [generatedScreens]);
+
+  // --- Dragging Effect ---
+  useEffect(() => {
+    const handleDragMove = (e) => {
+      if (!isDraggingScreen || !canvasRef.current) return;
+      
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      
+      // Calculate new screen position in unscaled canvas coordinates
+      const newX = (e.clientX - canvasRect.left) / zoom + canvasRef.current.scrollLeft / zoom - dragOffset.x;
+      const newY = (e.clientY - canvasRect.top) / zoom + canvasRef.current.scrollTop / zoom - dragOffset.y;
+      
+      setGeneratedScreens(prevScreens => {
+        const newScreens = [...prevScreens];
+        const screenToUpdate = newScreens[activeScreenIndex];
+        
+        if (screenToUpdate) {
+            screenToUpdate.x = newX;
+            screenToUpdate.y = newY;
+        }
+        return newScreens;
+      });
+    };
+
+    window.addEventListener('mousemove', handleDragMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleDragMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDraggingScreen, activeScreenIndex, dragOffset, zoom, handleMouseUp]);
+
+  // Center canvas initially AND on new screen generation
+  useEffect(() => {
+    if (canvasRef.current && generatedScreens.length > 0) {
+        const el = canvasRef.current;
+        const screenWidth = getFrameWidth();
+        const screenHeight = getFrameHeight();
+        const padding = 500;
+
+        setTimeout(() => {
+            // Target the center of the viewport area, then scroll back exactly half the screen width 
+            // from the left padding edge (500px) to make the first screen visible in the top-left corner.
+            const horizontalScrollTarget = padding - (el.clientWidth / 2) + (screenWidth / 2);
+
+            el.scrollTop = padding - (el.clientHeight / 2) + (screenHeight / 2);
+            el.scrollLeft = horizontalScrollTarget;
+        }, 50);
+    }
+  }, [generatedScreens.length, getFrameWidth, getFrameHeight]);
+
+  const handleGenerate = async () => {
+    if (!prompt) return;
+    setIsGenerating(true);
+    setGenerationProgress(10);
+
+    // 1. Set Skeleton State
+    const skeletonHeight = getFixedScreenHeight();
+    const skeletonHtml = `<div class="w-full h-full bg-neutral-950 flex flex-col items-center justify-center text-neutral-600 font-mono animate-pulse p-8"><div class="w-16 h-16 bg-neutral-800 rounded-full mb-6"></div><div class="w-3/4 h-4 bg-neutral-800 rounded mb-3"></div><div class="w-1/2 h-4 bg-neutral-800 rounded"></div></div>`;
+    
+    // Determine the position for new screens (offset from the first screen if it exists)
+    const newScreenPosition = generatedScreens.length > 0
+        ? { x: generatedScreens[0].x + getFrameWidth() + 100, y: generatedScreens[0].y }
+        : { x: 0, y: 0 }; // Start at origin
+
+    const newScreens = Array.from({ length: screenCount }).map((_, i) => ({
+        name: `Screen ${i + 1}`,
+        rawHtml: skeletonHtml,
+        type: 'html',
+        height: skeletonHeight,
+        x: newScreenPosition.x + i * (getFrameWidth() + 50),
+        y: newScreenPosition.y
+    }));
+
+    if (generatedScreens.length > 0) saveStateToHistory(generatedScreens);
+    setGeneratedScreens(newScreens);
+    setActiveScreenIndex(0);
+
+    try {
+      const systemPrompt = getSystemPrompt(screenCount, platform, []);
+      const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\nUSER REQUEST: "${prompt}"` }] }] })
+      });
+      
+      setGenerationProgress(70);
+      const data = await response.json();
+      if (!data.candidates || !data.candidates.length) throw new Error("No content generated");
+
+      let text = data.candidates[0].content.parts[0].text;
+      
+      // 2. Robust Extraction - Find all HTML code blocks
+      const htmlBlockRegex = /```html\n([\s\S]*?)```/g;
+      const extractedHtml = [];
+      let match;
+      
+      while ((match = htmlBlockRegex.exec(text)) !== null) {
+          extractedHtml.push(match[1].trim());
+      }
+
+      // 3. Final Screen Assembly
+      const finalScreens = newScreens.map((screen, idx) => ({
+          ...screen,
+          name: extractedHtml[idx] ? `Screen ${idx + 1}` : screen.name,
+          rawHtml: extractedHtml[idx] || `<div class="w-full h-full flex items-center justify-center bg-red-900/50 text-white/80">ERROR: Could not parse HTML for screen ${idx + 1}</div>`,
+      }));
+
+      // Fallback: If no blocks were found, attempt single raw extraction
+      if (finalScreens.every(s => s.rawHtml.includes('ERROR'))) {
+          const firstDiv = text.indexOf('<div');
+          const lastDiv = text.lastIndexOf('</div>');
+          if (firstDiv !== -1 && lastDiv !== -1 && lastDiv > firstDiv) {
+              const rawHtml = text.substring(firstDiv, lastDiv + 6).trim();
+              if (finalScreens.length > 0) {
+                 finalScreens[0] = { ...finalScreens[0], name: 'Single Draft Screen', rawHtml };
+              }
+          }
+      }
+
+      setGeneratedScreens(finalScreens);
+      setGenerationProgress(100);
+      setActivePanel(null);
+
+    } catch (e) {
+      console.error(e);
+      alert(`Generation failed: ${e.message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const addScreen = () => {
+    const h = getFixedScreenHeight();
+    
+    const lastScreen = generatedScreens[generatedScreens.length - 1] || { x: 0, y: 0, height: getFixedScreenHeight(), width: getFrameWidth() };
+    const offsetX = lastScreen.x !== undefined ? lastScreen.x + getFrameWidth() + 50 : 0;
+    const offsetY = lastScreen.y !== undefined ? lastScreen.y : 0;
+
+    const newS = { name: `Screen ${generatedScreens.length + 1}`, rawHtml: '<div class="w-full h-full bg-black text-white flex items-center justify-center">New Screen</div>', type:'html', height: h, x: offsetX, y: offsetY };
+    const next = [...generatedScreens, newS];
+    saveStateToHistory(next);
+    setActiveScreenIndex(generatedScreens.length);
+  };
+  
+  const addComponent = (type) => {
+      const tmpl = ManualTemplates[type] ? ManualTemplates[type]() : { html: '<div class="p-4 border border-white text-white">Element</div>', type: 'html'};
+      if(generatedScreens.length === 0) {
+          const h = getFixedScreenHeight();
+          saveStateToHistory([{name:"Screen 1", rawHtml: tmpl.html, type:'html', height: h, x: 0, y: 0}]);
+          setActiveScreenIndex(0);
+          return;
+      }
+      const next = JSON.parse(JSON.stringify(generatedScreens));
+      const curr = next[activeScreenIndex].rawHtml;
+      const idx = curr.lastIndexOf('</div>'); 
+      next[activeScreenIndex].rawHtml = idx > 0 ? curr.slice(0, idx) + tmpl.html + curr.slice(idx) : curr + tmpl.html;
+      saveStateToHistory(next);
+  };
+  
+  const deleteComponent = (idx) => {
+      if(!generatedScreens) return;
+      const next = [...generatedScreens];
+      next.splice(idx, 1);
+      saveStateToHistory(next);
+      if (activeScreenIndex >= next.length) setActiveScreenIndex(Math.max(0, next.length - 1));
+  };
+
+  const handleExport = (type, idx) => {
+    setExportMenuOpen(null);
+    if (!generatedScreens) return;
+    if (type === 'html') {
+        const s = generatedScreens[idx];
+        const blob = new Blob([s.rawHtml], {type: 'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download=`${s.name}.html`; a.click();
+    } else if (type === 'png') {
+        captureElement(null, 3, true).then(c => { if(c) { const a=document.createElement('a'); a.href=c.toDataURL(); a.download=`layr_export.png`; a.click(); } });
+    } else if (type === 'pdf') {
+        exportPDF(`screen-${idx}`, generatedScreens[idx].name);
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    const drawingColor = toolMode === 'eraser' ? 'transparent' : customColor;
+    
+    if (toolMode === 'pen' || toolMode === 'eraser') {
+        setIsDrawing(true);
+        const rect = document.getElementById('drawing-layer').getBoundingClientRect();
+        const x = (e.clientX - rect.left) / zoom;
+        const y = (e.clientY - rect.top) / zoom;
+        setDrawings(p => [...p, { color: drawingColor, points: [{x, y}], strokeWidth: strokeSize, isEraser: toolMode === 'eraser' }]);
+        return;
+    }
+    // Determine target (Screen, Pan area, or Drawing)
+    const screenTarget = e.target.closest('.draggable-screen');
+
+    if (screenTarget && toolMode === 'cursor') {
+        // Start dragging screen
+        const screenIndex = parseInt(screenTarget.dataset.index, 10);
+        handleDragStart(e, screenIndex);
+        return;
+    }
+    
+    // Panning logic
+    if (e.target.closest('.viewport-container') && (toolMode === 'hand' || e.button === 1)) {
+         if (!e.target.closest('button') && !e.target.closest('input')) {
+            setIsPanning(true);
+            setPanStart({ x: e.clientX, y: e.clientY });
+            if (canvasRef.current) setScrollStart({ left: canvasRef.current.scrollLeft, top: canvasRef.current.scrollTop });
+        }
+    }
+  };
+
+  // Enforces solo selection for tools
+  const setSoloToolMode = (tool) => {
+    setToolMode(tool);
+    if (tool !== 'pen' && tool !== 'eraser') {
+        setStrokeSize(4); 
+    }
+  };
+
+  const togglePanel = (p) => setActivePanel(p === activePanel ? null : p);
+  const toggleFeature = (id) => setSelectedFeatures(p => p.includes(id) ? p.filter(x=>x!==id) : [...p, id]);
+  const handleImageUpload = () => {}; 
+
+  // --- RENDERERS ---
+  const renderPanelContent = () => {
+    if (activePanel === 'ai') {
+        return (
+            <>
+                <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Prompt</label>
+                    <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Describe the UI (e.g., 'Dark mode music player with album art')..." className="w-full h-32 bg-[#222] border border-white/10 rounded-lg p-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none text-white"/>
+                </div>
+                <div className="space-y-3">
+                     <label className="text-[10px] font-bold text-neutral-500 uppercase">Device</label>
+                     <div className="flex gap-2 p-1 bg-[#222] rounded-lg">
+                        {['mobile', 'desktop'].map(p => (
+                            <button key={p} onClick={()=>setPlatform(p)} className={`flex-1 py-2 rounded text-xs font-medium transition-all ${platform===p ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`}>{p.charAt(0).toUpperCase() + p.slice(1)}</button>
+                        ))}
+                     </div>
+                </div>
+                {/* Screen Count Input */}
+                <div className="space-y-3 pt-3 border-t border-white/10">
+                    <div className="flex justify-between">
+                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Screens to Generate</label>
+                        <span className="text-xs text-blue-400 font-mono">{screenCount}</span>
+                    </div>
+                    <input type="range" min="1" max="5" value={screenCount} onChange={e=>setScreenCount(Number(e.target.value))} className="w-full accent-blue-500 h-1 bg-white/10 rounded-lg appearance-none"/>
+                </div>
+                <button onClick={handleGenerate} disabled={isGenerating || !prompt} className={`w-full py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 mt-6 transition-all ${isGenerating ? 'bg-blue-900/50 text-blue-200' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20'}`}>
+                    {isGenerating ? <RefreshCw className="animate-spin w-4 h-4"/> : <Wand2 className="w-4 h-4"/>} 
+                    {isGenerating ? 'Generating...' : 'Generate UI'}
+                </button>
+            </>
+        )
+    }
+    return <div className="text-neutral-500 text-sm text-center mt-10">Select a tool</div>;
+  };
+
+  return (
+    <div className="flex h-screen w-full bg-[#050505] text-neutral-200 font-sans overflow-hidden selection:bg-blue-500/30">
+       <style>{`
+        /* Global styles */
+        @keyframes subtle-pulse { 0%, 100% { box-shadow: 0 0 100px 50px rgba(59, 130, 246, 0.05); } 50% { box-shadow: 0 0 150px 80px rgba(59, 130, 246, 0.15); } }
+        #drawing-layer { mix-blend-mode: color-dodge; } 
+      `}</style>
+
+      {/* Sidebar */}
+      <div className={`absolute top-0 left-0 h-full w-72 bg-[#0A0A0A]/95 border-r border-white/10 backdrop-blur-md z-[80] transition-transform duration-300 ease-in-out flex flex-col shadow-2xl ${sidebarIsOpened ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-5 border-b border-white/10 flex justify-between items-center">
+           <h2 className="text-sm font-bold tracking-wide text-white flex items-center gap-2"><Wand2 size={16} className="text-blue-500"/> GENERATOR</h2>
+           <button onClick={() => setActivePanel(null)} className="text-neutral-500 hover:text-white"><PanelLeftClose size={16}/></button>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">{renderPanelContent()}</div>
+      </div>
+
+      {/* Main Workspace */}
+      <div className={`flex flex-col flex-1 h-full relative transition-all duration-300`} style={{ marginLeft: sidebarIsOpened ? '288px' : '0px' }} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}>
+         
+         {/* Top Bar */}
+         <div className={`absolute top-6 z-[70] flex items-center gap-1 p-1.5 rounded-xl bg-[#1A1A1A]/70 border border-white/20 shadow-2xl backdrop-blur-xl no-print transition-all duration-300`} style={fixedUIStyle}>
+            <button onClick={onBack} className="p-2 hover:bg-white/20 rounded text-neutral-400 hover:text-white" title="Back"><ArrowLeft size={14}/></button>
+            <div className="w-px h-4 bg-white/10 mx-2"></div>
+            <button onClick={()=>setSoloToolMode('cursor')} className={`p-2 hover:bg-white/20 rounded ${toolMode === 'cursor' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`} title="Select"><MousePointer2 size={14}/></button>
+            <button onClick={()=>setZoom(z=>Math.max(0.2, z-0.1))} className="p-2 hover:bg-white/20 rounded text-neutral-400 hover:text-white"><ZoomOut size={14}/></button>
+            <span className="text-[10px] font-mono w-8 text-center text-neutral-400">{Math.round(zoom*100)}%</span>
+            <button onClick={()=>setZoom(z=>Math.min(3, z+0.1))} className="p-2 hover:bg-white/20 rounded text-neutral-400 hover:text-white"><ZoomIn size={14}/></button>
+            <div className="w-px h-4 bg-white/10 mx-2"></div>
+            <button onClick={()=>togglePanel('ai')} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-md text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition-all"><Sparkles size={14} /> Generate</button>
+            <div className="w-px h-4 bg-white/10 mx-2"></div>
+            <div className="relative">
+              <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="flex items-center gap-2 px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold border border-white/10 transition-colors text-white"><Download size={14} /> Export <ChevronDown size={10} /></button>
+              {exportMenuOpen && (
+                <div className="absolute top-full right-0 mt-2 w-40 bg-[#1A1A1A]/90 border border-white/20 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 backdrop-blur-md">
+                  <button onClick={() => handleExport('html', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white"><FileCode size={14} className="text-blue-400"/> Download HTML</button>
+                  <button onClick={() => handleExport('pdf', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white"><FileText size={14} className="text-red-400"/> Print PDF</button>
+                  <button onClick={() => handleExport('png', null)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white"><FileImage size={14} className="text-purple-400"/> Save Image</button>
+                </div>
+              )}
+            </div>
+         </div>
+
+         {/* Canvas */}
+         <div 
+            ref={canvasRef} 
+            className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+            onMouseDown={handleMouseDown}
+            onWheel={(e) => { if(e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom(z => Math.min(Math.max(0.2, z - e.deltaY*0.005), 3)); } }}
+            style={{
+                backgroundColor: '#050505',
+                backgroundImage: zoom >= 0.20 ? `radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px)` : 'none',
+                backgroundSize: `${20 * zoom}px ${20 * zoom}px`, 
+                backgroundRepeat: 'repeat', 
+                backgroundAttachment: 'local',
+            }}
+         >
+            {/* Center Glow & Progress */}
+            {isGenerating && (
+                <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[45] transition-all duration-300" style={fixedUIStyle}>
+                    <div className="absolute inset-0 m-[-150px] animate-[subtle-pulse_2s_ease-in-out_infinite] mix-blend-screen z-[20] rounded-full bg-blue-600/10 blur-[100px]"></div> 
+                    <div className="relative p-6 rounded-xl bg-[#1A1A1A]/95 border border-blue-500/50 backdrop-blur-lg shadow-2xl shadow-blue-900/50 z-[40] flex flex-col items-center gap-2">
+                        <Loader2 className="animate-spin text-blue-400" size={24}/>
+                        <p className="text-lg font-bold text-white tracking-wider">UI Completion: <span className="text-blue-400">{generationProgress}%</span></p>
+                    </div>
+                </div>
+            )}
+            
+            <div id="canvas-root" className={`flex gap-20 transition-transform duration-200 ease-out relative`} style={{ transform: `scale(${zoom})`, minWidth: 'fit-content', minHeight: 'fit-content', padding: '500px', paddingTop: '200px', margin: 'auto', gap: '200px' }}>
+               <svg id="drawing-layer" className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-50" style={{minWidth: '100%', minHeight: '100%'}}>
+                   {drawings.map((d, i) => (
+                       <path key={i} d={`M ${d.points.map(p=>`${p.x} ${p.y}`).join(' L ')}`} stroke={d.color} strokeWidth={d.strokeSize} fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ mixBlendMode: d.isEraser ? 'destination-out' : 'normal', opacity: d.isEraser ? 1 : 1, stroke: d.isEraser ? 'transparent' : d.color }} />
+                   ))}
+               </svg>
+               
+               {/* Show initial placeholder only if no screens exist AND not generating */}
+               {generatedScreens.length === 0 && !isGenerating && (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
+                    <div className="w-24 h-24 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center shadow-2xl shadow-blue-500/20 animate-pulse">
+                        <Wand2 size={36} className="text-blue-400"/>
+                    </div>
+                    <p className="mt-4 text-neutral-400 text-sm">Start Architecting</p>
+                </div>
+               )}
+
+               {generatedScreens?.map((screen, idx) => (
+                  <div key={idx} id={`screen-${idx}`} data-index={idx} // Used for drag handling
+                     onClick={()=>setActiveScreenIndex(idx)} 
+                     onMouseDown={toolMode === 'cursor' ? (e) => handleDragStart(e, idx) : undefined}
+                     className={`draggable-screen absolute transition-all duration-300 ease-out ${idx===activeScreenIndex ? 'ring-4 ring-blue-500/50 scale-[1.02] z-10' : 'hover:scale-[1.01]'} ${toolMode === 'cursor' ? 'cursor-grab' : ''}`}
+                     style={{
+                        transform: `scale(${zoom})`,
+                        left: `${(screen.x || 0) + 500}px`, // Adjust for padding 
+                        top: `${(screen.y || 0) + 500}px`, // Adjust for padding
+                        zIndex: activeScreenIndex === idx && isDraggingScreen ? 60 : activeScreenIndex === idx ? 10 : 5
+                     }}
+                  >
+                     <div className="absolute -top-14 left-0 right-0 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity px-1">
+                        <span className="text-sm font-bold text-neutral-500 bg-black/50 px-3 py-1 rounded-full">{screen.name}</span>
+                        <div className="flex gap-1 bg-[#1A1A1A] p-1 rounded-lg border border-white/10 shadow-lg">
+                           <button onClick={(e) => { e.stopPropagation(); deleteComponent(idx); }} className="p-2 hover:bg-red-500/20 hover:text-red-400 rounded text-neutral-400" title="Delete"><Trash2 size={14}/></button>
+                           <button onClick={(e) => { e.stopPropagation(); handleExport('png', idx); }} className="p-2 hover:bg-white/10 rounded text-neutral-400 hover:text-white" title="Save"><Camera size={14}/></button>
+                        </div>
+                     </div>
+                     <div className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${platform === 'mobile' ? 'w-[375px] rounded-[50px]' : 'w-[1200px] rounded-xl'}`} style={{ height: getFrameHeight() + 'px' }}>
+                        {platform === 'mobile' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a1a] rounded-b-xl z-20 pointer-events-none"></div>}
+                        <IframeRenderer htmlContent={screen.rawHtml} isInteracting={isInteracting} />
+                     </div>
+                  </div>
+               ))}
+            </div>
+         </div>
+
+         {/* Bottom Dock */}
+         <div className={`absolute bottom-8 z-[100] p-2 rounded-2xl bg-[#1A1A1A]/70 border border-white/20 shadow-2xl backdrop-blur-xl flex items-center gap-2 transition-all no-print`} style={fixedUIStyle}>
+            <div className="flex gap-1">
+               <button onClick={()=>setSoloToolMode('cursor')} className={`p-2.5 rounded-xl ${toolMode === 'cursor' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Select"><MousePointer2 size={18}/></button>
+               <button onClick={()=>setSoloToolMode('hand')} className={`p-2.5 rounded-xl ${toolMode === 'hand' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Pan"><Hand size={18}/></button>
+            </div>
+            <div className="w-px h-6 bg-white/10 mx-1"></div>
+            <div className="flex gap-1">
+               <button onClick={addScreen} className="p-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/20" title="Add Frame"><LayoutTemplate size={18}/></button>
+               <button onClick={()=>setSoloToolMode('pen')} className={`p-2.5 rounded-xl ${toolMode==='pen' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Pen"><PenTool size={18}/></button>
+               <button onClick={()=>setSoloToolMode('eraser')} className={`p-2.5 rounded-xl ${toolMode==='eraser' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Eraser"><Eraser size={18}/></button>
+               {isDrawingToolActive && (<div className="flex items-center gap-2 bg-[#1A1A1A] p-2 rounded-xl border border-white/10"><MinusCircle size={14} className="text-neutral-400"/><input type="range" min="1" max="20" value={strokeSize} onChange={e => setStrokeSize(Number(e.target.value))} className="w-16 h-1 accent-blue-500 rounded-lg appearance-none"/><PlusCircle size={14} className="text-neutral-400"/></div>)}
+               <button onClick={undo} disabled={history.length === 0} className={`p-2.5 rounded-xl ${history.length === 0 ? 'text-neutral-700' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Undo"><RotateCcw size={18}/></button>
+            </div>
+            <div className="w-px h-6 bg-white/10 mx-1"></div>
+            <div className="flex gap-1">
+               <button onClick={()=>togglePanel('layers')} className={`p-2.5 rounded-xl ${activePanel==='layers' ? 'text-white bg-white/20' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Layers"><Layers size={18}/></button>
+               <button onClick={()=>togglePanel('components')} className={`p-2.5 rounded-xl ${activePanel==='components' ? 'text-white bg-white/20' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Components"><Box size={18}/></button>
+               <button onClick={()=>togglePanel('assets')} className={`p-2.5 rounded-xl ${activePanel==='assets' ? 'text-white bg-white/20' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Assets"><ImageIcon size={18}/></button>
+            </div>
+            <div className="w-px h-6 bg-white/10 mx-1"></div>
+            <div className="flex gap-1 items-center">
+               <button onClick={()=>togglePanel('ai')} className={`p-2.5 rounded-xl ${activePanel==='ai' ? 'text-purple-400 bg-purple-500/20' : 'text-neutral-400 hover:text-white'}`} title="AI Generator"><Sparkles size={18}/></button>
+               <div className="relative w-8 h-8 flex items-center justify-center"><input type="color" value={customColor} onChange={e=>{setCustomColor(e.target.value);}} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" /><div className="w-4 h-4 rounded-full border border-white/20" style={{backgroundColor: customColor}}></div></div>
+            </div>
+         </div>
+      </div>
+    </div>
+  );
+}
+
+// --- MAIN ROUTER ---
+export default function DesignGenie() {
+  const [view, setView] = useState('home'); 
+  const [projects, setProjects] = useState(() => JSON.parse(localStorage.getItem('designGenieProjects') || '[]'));
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+
+  useEffect(() => localStorage.setItem('designGenieProjects', JSON.stringify(projects)), [projects]);
+
+  const createProject = () => {
+      const newProject = { id: Date.now().toString(), name: `Untitled Project ${projects.length+1}`, updatedAt: Date.now(), data: { screens: [] } }; // Start empty
+      setProjects([...projects, newProject]);
+      setCurrentProjectId(newProject.id);
+      setView('editor');
+  };
+
+  const openProject = (id) => { setCurrentProjectId(id); setView('editor'); };
+  const deleteProject = (id) => setProjects(projects.filter(p => p.id !== id));
+  const saveProject = (updatedProject) => setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+
+  // Placeholder for HomePage structure (to avoid complexity in the main component)
+  const HomePage = ({ projects, onCreate, onDelete, onOpen }) => (
+      <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center font-sans relative">
+          
+          {/* Static Background Grid */}
+          <div className="absolute inset-0 z-0 opacity-20" style={{ backgroundImage: `radial-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px)`, backgroundSize: '20px 20px' }}></div>
+          
+          {/* Fixed Top Nav Bar (Cluely Style) */}
+          <div className="fixed top-0 left-0 right-0 z-20 h-20 flex justify-between items-center px-10 border-b border-white/10 bg-[#0A0A0A]/90 backdrop-blur-md">
+                <div className="flex items-center gap-4">
+                    <Wand2 size={24} className="text-blue-500 transform rotate-6"/>
+                    <h1 className="text-2xl font-extrabold tracking-tight text-white">LAYR AI</h1>
+                </div>
+                <button onClick={onCreate} className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-500 transition-colors flex items-center gap-2 shadow-lg shadow-blue-900/30">
+                    <Plus size={14}/> New Project
+                </button>
+          </div>
+
+          <div className="w-full max-w-6xl pt-20 pb-10 z-10">
+              
+              {/* Hero Section - Image and Text Container */}
+              <div className="relative text-center mb-20 rounded-2xl bg-[#1A1A1A] shadow-2xl shadow-black/50 backdrop-blur-sm overflow-hidden">
+                  
+                  {/* Background Image Container with Fade */}
+                  <div className="relative w-full h-[500px] overflow-hidden" 
+                       style={{ 
+                            // Using robust CSS Background with Gradient Overlay
+                            backgroundImage: `url('${HERO_IMAGE_URL}'), ${HERO_BACKGROUND_GRADIENT}`,
+                            backgroundBlendMode: 'overlay', // Blend the gradient over the image
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                       }}>
+                      
+                      {/* Dark Gradient Overlay for Readability (from top and bottom) */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A1A] via-black/0 to-[#1A1A1A] opacity-90"></div>
+                  </div>
+                  
+                  {/* Content Overlay - BELOW IMAGE */}
+                  <div className="p-10 -mt-20 relative z-10 bg-[#1A1A1A] rounded-b-2xl">
+                       <h2 className="text-5xl font-extrabold tracking-tighter text-white mb-4 leading-tight animate-fade-slide-in" style={{animationDelay: '0.1s'}}>
+                           AI-Powered UI Generation.
+                       </h2>
+                       <p className="text-lg text-neutral-400 max-w-3xl mx-auto mb-6 animate-fade-slide-in" style={{animationDelay: '0.2s'}}>
+                           Instantly generate, inspect, and export high-fidelity designs for any platform using clean Tailwind CSS code.
+                       </p>
+                       <button onClick={onCreate} className="px-8 py-3 bg-white text-black rounded-full text-md font-bold shadow-xl hover:shadow-blue-500/50 transform hover:scale-[1.02] duration-300 transition-all animate-fade-slide-in" style={{animationDelay: '0.3s'}}>
+                           Start New Creation
+                       </button>
+                  </div>
+              </div>
+
+              
+              {/* Project List */}
+              <h2 className="text-2xl font-bold mb-6 text-neutral-300 border-b border-white/5 pb-2">Your Projects ({projects.length})</h2>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {/* Template Card: New Project */}
+                  <button onClick={onCreate} className="aspect-square rounded-xl border border-dashed border-white/20 hover:border-blue-500/50 hover:bg-white/5 flex flex-col items-center justify-center gap-4 transition-all group shadow-md hover:shadow-blue-500/20">
+                      <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-500/10 group-hover:scale-110 transition-all duration-300">
+                          <Plus size={28} className="text-blue-400 group-hover:text-blue-300"/>
+                      </div>
+                      <span className="text-md font-semibold text-blue-400">Start Designing</span>
+                  </button>
+                  
+                  {/* Dynamically Rendered Project Cards */}
+                  {projects.map(p => (
+                      <div key={p.id} onClick={() => onOpen(p.id)} className="aspect-square rounded-xl bg-[#1A1A1A] border border-white/5 hover:border-blue-500/50 transition-all duration-200 cursor-pointer relative group overflow-hidden shadow-lg hover:shadow-blue-500/20">
+                          
+                          {/* Project Preview Area (Simulated Screenshot) */}
+                          <div className={`h-2/3 w-full p-3 rounded-t-xl opacity-80 transition-opacity group-hover:opacity-100`} 
+                               style={{ 
+                                    background: `linear-gradient(to bottom, #1A1A1A 50%, #000000 100%)`,
+                                    backgroundSize: '100% 100%' 
+                               }}>
+                              <div className="w-full h-full bg-black/30 rounded-lg flex items-center justify-center text-xs text-neutral-300">
+                                  {p.name}
+                              </div>
+                          </div>
+                          
+                          {/* Project Info */}
+                          <div className="p-4 flex flex-col justify-end h-1/3">
+                              <h3 className="font-bold text-base truncate text-white">{p.name}</h3>
+                              <p className="text-xs text-neutral-500 mt-0.5">Updated: {new Date(p.updatedAt).toLocaleDateString()}</p>
+                              <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} 
+                                      className="absolute top-4 right-4 p-1 rounded-full text-neutral-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" 
+                                      title="Delete Project">
+                                  <Trash2 size={16}/>
+                              </button>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      </div>
+  );
+
+  if (view === 'home') return <HomePage projects={projects} onCreate={createProject} onDelete={deleteProject} onOpen={openProject} />;
+  const currentProject = projects.find(p => p.id === currentProjectId);
+  if (!currentProject) {
+    setView('home');
+    return null;
+  }
+  return <Editor project={currentProject} onSave={saveProject} onBack={() => setView('home')} />;
+}
