@@ -47,6 +47,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
+  const svgLayerRef = useRef<SVGSVGElement>(null);
 
   const sidebarIsOpened = !!activePanel;
   const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
@@ -97,11 +98,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   }, [toolMode, isPanning, zoom]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser')) {
-      const drawingLayer = document.getElementById('drawing-layer') as SVGElement;
-      if (!drawingLayer) return;
-      
-      const rect = drawingLayer.getBoundingClientRect();
+    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser') && svgLayerRef.current) {
+      const svg = svgLayerRef.current;
+      const rect = svg.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       
@@ -323,10 +322,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     if (toolMode === 'pen' || toolMode === 'eraser') {
       setIsDrawing(true);
       
-      const drawingLayer = document.getElementById('drawing-layer') as SVGElement;
-      if (!drawingLayer) return;
+      if (!svgLayerRef.current) return;
       
-      const rect = drawingLayer.getBoundingClientRect();
+      const rect = svgLayerRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       
@@ -609,6 +607,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           
           {/* Drawing layer - outside scaled container */}
           <svg 
+            ref={svgLayerRef}
             id="drawing-layer"
             style={{ 
               position: 'absolute',
@@ -617,7 +616,8 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               zIndex: 45,
               cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : 'auto',
               width: '100%',
-              height: '100%'
+              height: '100%',
+              overflow: 'visible'
             }}
             onMouseDown={isDrawingToolActive ? handleMouseDown : undefined}
             onMouseMove={isDrawingToolActive ? handleMouseMove : undefined}
