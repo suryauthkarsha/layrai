@@ -100,11 +100,97 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     setDragOffset({ x: offsetX, y: offsetY });
   }, [toolMode, isPanning, zoom]);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!svgLayerRef.current) return;
+  // Redraw canvas
+  useEffect(() => {
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
     
-    const svg = svgLayerRef.current;
-    const rect = svg.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw all pen strokes
+    drawings.forEach(d => {
+      if (d.isEraser) return; // Don't draw eraser marks
+      ctx.strokeStyle = d.color;
+      ctx.lineWidth = d.strokeWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      if (d.points.length < 2) return;
+      
+      ctx.beginPath();
+      ctx.moveTo(d.points[0].x, d.points[0].y);
+      for (let i = 1; i < d.points.length; i++) {
+        ctx.lineTo(d.points[i].x, d.points[i].y);
+      }
+      ctx.stroke();
+    });
+    
+    // Draw all shapes
+    shapes.forEach(shape => {
+      ctx.strokeStyle = shape.color;
+      ctx.lineWidth = 2;
+      ctx.fillStyle = 'transparent';
+      
+      if (shape.type === 'rect') {
+        ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
+      } else if (shape.type === 'circle') {
+        ctx.beginPath();
+        ctx.arc(shape.x + shape.width / 2, shape.y + shape.height / 2, Math.min(shape.width, shape.height) / 2, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (shape.type === 'triangle') {
+        ctx.beginPath();
+        ctx.moveTo(shape.x + shape.width / 2, shape.y);
+        ctx.lineTo(shape.x, shape.y + shape.height);
+        ctx.lineTo(shape.x + shape.width, shape.y + shape.height);
+        ctx.closePath();
+        ctx.stroke();
+      }
+    });
+    
+    // Draw shape preview
+    if (isDrawing && toolMode === 'shapes' && shapeStart) {
+      const end = (window as any).currentShapeEnd;
+      if (end) {
+        const width = Math.abs(end.x - shapeStart.x);
+        const height = Math.abs(end.y - shapeStart.y);
+        const minX = Math.min(shapeStart.x, end.x);
+        const minY = Math.min(shapeStart.y, end.y);
+        
+        ctx.strokeStyle = customColor;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.globalAlpha = 0.7;
+        
+        if (shapeMode === 'rect') {
+          ctx.strokeRect(minX, minY, width, height);
+        } else if (shapeMode === 'circle') {
+          ctx.beginPath();
+          ctx.arc(minX + width / 2, minY + height / 2, Math.min(width, height) / 2, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (shapeMode === 'triangle') {
+          ctx.beginPath();
+          ctx.moveTo(minX + width / 2, minY);
+          ctx.lineTo(minX, minY + height);
+          ctx.lineTo(minX + width, minY + height);
+          ctx.closePath();
+          ctx.stroke();
+        }
+        
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }, [drawings, shapes, isDrawing, toolMode, shapeStart, shapeMode, customColor]);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
@@ -157,7 +243,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     // FINALIZE SHAPE
     if (isDrawing && toolMode === 'shapes' && shapeStart && shapeMode) {
       const end = (window as any).currentShapeEnd;
-      if (end && svgLayerRef.current) {
+      if (end) {
         const width = Math.abs(end.x - shapeStart.x);
         const height = Math.abs(end.y - shapeStart.y);
         
@@ -222,6 +308,30 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDraggingScreen, activeScreenIndex, dragOffset, zoom]);
+
+  // Set up canvas dimensions
+  useEffect(() => {
+    if (drawingCanvasRef.current && canvasRef.current) {
+      const canvas = drawingCanvasRef.current;
+      const viewport = canvasRef.current;
+      
+      canvas.width = viewport.clientWidth;
+      canvas.height = viewport.clientHeight;
+    }
+    
+    const handleResize = () => {
+      if (drawingCanvasRef.current && canvasRef.current) {
+        const canvas = drawingCanvasRef.current;
+        const viewport = canvasRef.current;
+        
+        canvas.width = viewport.clientWidth;
+        canvas.height = viewport.clientHeight;
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Center canvas
   useEffect(() => {
@@ -693,150 +803,24 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             ))}
           </div>
           
-          {/* Drawing layer - outside scaled container */}
-          <svg 
-            ref={svgLayerRef}
+          {/* Drawing Canvas - Replace SVG */}
+          <canvas 
+            ref={drawingCanvasRef}
             id="drawing-layer"
             style={{ 
               position: 'absolute',
               inset: 0, 
               pointerEvents: isDrawingToolActive ? 'auto' : 'none', 
               zIndex: 45,
-              cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : 'auto',
+              cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : toolMode === 'text' ? 'text' : 'auto',
               width: '100%',
-              height: '100%',
-              overflow: 'visible'
+              height: '100%'
             }}
             onMouseDown={isDrawingToolActive ? handleMouseDown : undefined}
             onMouseMove={isDrawingToolActive ? handleMouseMove : undefined}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-          >
-            {/* Pen drawings */}
-            {drawings.map((d, i) => 
-              d.isEraser ? (
-                <circle 
-                  key={i}
-                  cx={d.points[d.points.length - 1]?.x || 0}
-                  cy={d.points[d.points.length - 1]?.y || 0}
-                  r={d.strokeWidth / 2}
-                  fill="rgba(255, 255, 255, 0.1)"
-                  stroke="rgba(255, 255, 255, 0.3)"
-                  strokeWidth="1"
-                  opacity={0.6}
-                />
-              ) : (
-                <path 
-                  key={i} 
-                  d={`M ${d.points.map(p => `${p.x} ${p.y}`).join(' L ')}`} 
-                  stroke={d.color} 
-                  strokeWidth={d.strokeWidth} 
-                  fill="none" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                  opacity={0.9}
-                />
-              )
-            )}
-            
-            {/* Shapes */}
-            {shapes.map(shape => {
-              if (shape.type === 'rect') {
-                return (
-                  <rect
-                    key={shape.id}
-                    x={shape.x}
-                    y={shape.y}
-                    width={shape.width}
-                    height={shape.height}
-                    fill="none"
-                    stroke={shape.color}
-                    strokeWidth="2"
-                  />
-                );
-              } else if (shape.type === 'circle') {
-                return (
-                  <circle
-                    key={shape.id}
-                    cx={shape.x + shape.width / 2}
-                    cy={shape.y + shape.height / 2}
-                    r={Math.min(shape.width, shape.height) / 2}
-                    fill="none"
-                    stroke={shape.color}
-                    strokeWidth="2"
-                  />
-                );
-              } else if (shape.type === 'triangle') {
-                const points = `${shape.x + shape.width / 2},${shape.y} ${shape.x},${shape.y + shape.height} ${shape.x + shape.width},${shape.y + shape.height}`;
-                return (
-                  <polygon
-                    key={shape.id}
-                    points={points}
-                    fill="none"
-                    stroke={shape.color}
-                    strokeWidth="2"
-                  />
-                );
-              }
-              return null;
-            })}
-            
-            {/* Shape preview while drawing */}
-            {isDrawing && toolMode === 'shapes' && shapeStart && (() => {
-              const end = (window as any).currentShapeEnd;
-              if (!end) return null;
-              
-              const width = Math.abs(end.x - shapeStart.x);
-              const height = Math.abs(end.y - shapeStart.y);
-              const minX = Math.min(shapeStart.x, end.x);
-              const minY = Math.min(shapeStart.y, end.y);
-              
-              if (shapeMode === 'rect') {
-                return (
-                  <rect
-                    key="preview"
-                    x={minX}
-                    y={minY}
-                    width={width}
-                    height={height}
-                    fill="none"
-                    stroke={customColor}
-                    strokeWidth="2"
-                    strokeDasharray="5,5"
-                    opacity={0.7}
-                  />
-                );
-              } else if (shapeMode === 'circle') {
-                return (
-                  <circle
-                    key="preview"
-                    cx={minX + width / 2}
-                    cy={minY + height / 2}
-                    r={Math.min(width, height) / 2}
-                    fill="none"
-                    stroke={customColor}
-                    strokeWidth="2"
-                    strokeDasharray="5,5"
-                    opacity={0.7}
-                  />
-                );
-              } else if (shapeMode === 'triangle') {
-                const points = `${minX + width / 2},${minY} ${minX},${minY + height} ${minX + width},${minY + height}`;
-                return (
-                  <polygon
-                    key="preview"
-                    points={points}
-                    fill="none"
-                    stroke={customColor}
-                    strokeWidth="2"
-                    strokeDasharray="5,5"
-                    opacity={0.7}
-                  />
-                );
-              }
-              return null;
-            })()}
-          </svg>
+          />
           
           {/* Text boxes */}
           {textBoxes.map(textBox => (
