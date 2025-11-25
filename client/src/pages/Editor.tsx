@@ -498,27 +498,27 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       {/* Main Editor */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar - Floating Glass */}
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/40 border border-white/5 rounded-xl shadow-lg px-4 py-2 flex items-center justify-between gap-4">
-          <button onClick={onBack} className="flex items-center gap-2 px-2.5 py-1 rounded text-neutral-400 hover:text-white transition-colors text-sm" data-testid="button-back">
-            <ArrowLeft size={15} />
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/40 border border-white/5 rounded-xl shadow-lg px-5 py-3 flex items-center justify-between gap-4">
+          <button onClick={onBack} className="flex items-center gap-2 px-3 py-1.5 rounded text-neutral-400 hover:text-white transition-colors text-sm font-medium" data-testid="button-back">
+            <ArrowLeft size={16} />
             Back
           </button>
 
-          <div className="flex items-center gap-2">
-            <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} className="p-1.5 text-neutral-400 hover:text-white" data-testid="button-zoom-out">
-              <ZoomOut size={15} />
+          <div className="flex items-center gap-3">
+            <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} className="p-2 text-neutral-400 hover:text-white" data-testid="button-zoom-out">
+              <ZoomOut size={16} />
             </button>
             <span className="text-xs text-neutral-400 w-10 text-center" data-testid="text-zoom">{Math.round(zoom * 100)}%</span>
-            <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} className="p-1.5 text-neutral-400 hover:text-white" data-testid="button-zoom-in">
-              <ZoomIn size={15} />
+            <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} className="p-2 text-neutral-400 hover:text-white" data-testid="button-zoom-in">
+              <ZoomIn size={16} />
             </button>
-            <button onClick={() => setActivePanel('generate')} className="px-2.5 py-1 text-xs font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1.5" data-testid="button-generate-panel">
-              <Sparkles size={13} />
+            <button onClick={() => setActivePanel('generate')} className="px-3 py-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-2" data-testid="button-generate-panel">
+              <Sparkles size={14} />
               Generate
             </button>
             <div className="relative">
-              <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="p-1.5 text-neutral-400 hover:text-white" data-testid="button-export">
-                <Download size={15} />
+              <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="p-2 text-neutral-400 hover:text-white" data-testid="button-export">
+                <Download size={16} />
               </button>
               {exportMenuOpen && (
                 <div className="absolute top-full right-0 mt-1 w-40 bg-black/80 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
@@ -537,8 +537,8 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                 </div>
               )}
             </div>
-            <button onClick={undo} disabled={history.length === 0} className="p-1.5 text-neutral-400 hover:text-white disabled:text-neutral-600" data-testid="button-undo">
-              <RotateCcw size={15} />
+            <button onClick={undo} disabled={history.length === 0} className="p-2 text-neutral-400 hover:text-white disabled:text-neutral-600" data-testid="button-undo">
+              <RotateCcw size={16} />
             </button>
           </div>
         </div>
@@ -684,48 +684,48 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         </div>
 
         {/* Bottom Toolbar - Floating Glass */}
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/40 border border-white/5 rounded-xl shadow-lg px-4 py-2 flex items-center justify-center gap-3">
-          <button onClick={() => setSoloToolMode('cursor')} className={`p-1.5 rounded transition-all ${toolMode === 'cursor' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-cursor">
-            <MousePointer2 size={15} />
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/40 border border-white/5 rounded-xl shadow-lg px-5 py-3 flex items-center justify-center gap-4">
+          <button onClick={() => setSoloToolMode('cursor')} className={`p-2 rounded transition-all ${toolMode === 'cursor' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-cursor">
+            <MousePointer2 size={16} />
           </button>
-          <button onClick={() => setSoloToolMode('hand')} className={`p-1.5 rounded transition-all ${toolMode === 'hand' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-hand">
-            <Hand size={15} />
+          <button onClick={() => setSoloToolMode('hand')} className={`p-2 rounded transition-all ${toolMode === 'hand' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-hand">
+            <Hand size={16} />
           </button>
 
-          <button onClick={() => setSoloToolMode('pen')} className={`p-1.5 rounded transition-all ${toolMode === 'pen' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-pen">
-            <PenTool size={15} />
+          <button onClick={() => setSoloToolMode('pen')} className={`p-2 rounded transition-all ${toolMode === 'pen' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-pen">
+            <PenTool size={16} />
           </button>
-          <button onClick={() => setSoloToolMode('eraser')} className={`p-1.5 rounded transition-all ${toolMode === 'eraser' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-eraser">
-            <Eraser size={15} />
+          <button onClick={() => setSoloToolMode('eraser')} className={`p-2 rounded transition-all ${toolMode === 'eraser' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-eraser">
+            <Eraser size={16} />
           </button>
 
           <div className="relative">
-            <button onClick={() => setSoloToolMode('shapes')} className={`p-1.5 rounded transition-all ${toolMode === 'shapes' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-shapes">
-              <Box size={15} />
+            <button onClick={() => setSoloToolMode('shapes')} className={`p-2 rounded transition-all ${toolMode === 'shapes' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-shapes">
+              <Box size={16} />
             </button>
             {toolMode === 'shapes' && (
-              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl p-1.5 flex gap-1">
-                <div onClick={() => setShapeMode('rect')} className={`p-1.5 rounded transition-all cursor-pointer ${shapeMode === 'rect' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`} data-testid="button-shape-rect">
-                  <Square size={13} />
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl p-2 flex gap-1.5">
+                <div onClick={() => setShapeMode('rect')} className={`p-2 rounded transition-all cursor-pointer ${shapeMode === 'rect' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`} data-testid="button-shape-rect">
+                  <Square size={14} />
                 </div>
-                <div onClick={() => setShapeMode('circle')} className={`p-1.5 rounded transition-all cursor-pointer ${shapeMode === 'circle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`} data-testid="button-shape-circle">
-                  <Circle size={13} />
+                <div onClick={() => setShapeMode('circle')} className={`p-2 rounded transition-all cursor-pointer ${shapeMode === 'circle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`} data-testid="button-shape-circle">
+                  <Circle size={14} />
                 </div>
-                <div onClick={() => setShapeMode('triangle')} className={`p-1.5 rounded transition-all cursor-pointer ${shapeMode === 'triangle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`} data-testid="button-shape-triangle">
-                  <Triangle size={13} />
+                <div onClick={() => setShapeMode('triangle')} className={`p-2 rounded transition-all cursor-pointer ${shapeMode === 'triangle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`} data-testid="button-shape-triangle">
+                  <Triangle size={14} />
                 </div>
               </div>
             )}
           </div>
 
-          <button onClick={() => setSoloToolMode('text')} className={`p-1.5 rounded transition-all ${toolMode === 'text' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-text">
-            <Type size={15} />
+          <button onClick={() => setSoloToolMode('text')} className={`p-2 rounded transition-all ${toolMode === 'text' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`} data-testid="button-tool-text">
+            <Type size={16} />
           </button>
 
-          <div className="flex items-center gap-2">
-            <input type="color" value={customColor} onChange={(e) => setCustomColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border border-white/20" data-testid="input-color" />
-            <input type="range" min="1" max="20" value={strokeSize} onChange={(e) => setStrokeSize(parseInt(e.target.value))} className="w-16" data-testid="input-stroke-size" />
-            <span className="text-xs text-neutral-400 w-6">{strokeSize}px</span>
+          <div className="flex items-center gap-2.5">
+            <input type="color" value={customColor} onChange={(e) => setCustomColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border border-white/20" data-testid="input-color" />
+            <input type="range" min="1" max="20" value={strokeSize} onChange={(e) => setStrokeSize(parseInt(e.target.value))} className="w-20" data-testid="input-stroke-size" />
+            <span className="text-xs text-neutral-400 w-8">{strokeSize}px</span>
           </div>
         </div>
       </div>
