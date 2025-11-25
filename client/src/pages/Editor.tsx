@@ -44,6 +44,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [screenCount, setScreenCount] = useState(1);
   const [isDraggingScreen, setIsDraggingScreen] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [shapeStart, setShapeStart] = useState<{ x: number; y: number } | null>(null);
+  const [textBoxes, setTextBoxes] = useState<Array<{ id: string; x: number; y: number; text: string }>>([]);
+  const [shapes, setShapes] = useState<Array<{ id: string; type: 'rect' | 'circle' | 'triangle'; x: number; y: number; width: number; height: number; color: string }>>([]);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -98,30 +101,85 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   }, [toolMode, isPanning, zoom]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser') && svgLayerRef.current) {
-      const svg = svgLayerRef.current;
-      const rect = svg.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      setDrawings(prev => {
-        if (prev.length === 0) return prev;
-        const last = prev[prev.length - 1];
-        const updated = { ...last, points: [...last.points, { x, y }] };
-        return [...prev.slice(0, -1), updated];
-      });
+    // Store event for shape preview
+    (window as any).lastMouseEvent = e;
+    
+    if (!svgLayerRef.current) return;
+    
+    const rect = svgLayerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Pen or Eraser drawing
+    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser')) {
+      if (toolMode === 'eraser') {
+        // Erase drawings within radius
+        const eraserRadius = strokeSize;
+        setDrawings(prev => prev.filter(d => {
+          if (d.isEraser) return true; // Keep eraser marks
+          return !d.points.some(p => {
+            const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
+            return dist < eraserRadius;
+          });
+        }));
+      } else {
+        // Pen drawing
+        setDrawings(prev => {
+          if (prev.length === 0) return prev;
+          const last = prev[prev.length - 1];
+          if (last.isEraser) return prev;
+          const updated = { ...last, points: [...last.points, { x, y }] };
+          return [...prev.slice(0, -1), updated];
+        });
+      }
       return;
     }
+    
+    // Trigger re-render for shape preview
+    if (isDrawing && toolMode === 'shapes' && shapeStart) {
+      setShapeStart({ ...shapeStart });
+      return;
+    }
+    
     if (isPanning && canvasRef.current) {
       canvasRef.current.scrollLeft = scrollStart.left - (e.clientX - panStart.x);
       canvasRef.current.scrollTop = scrollStart.top - (e.clientY - panStart.y);
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e?: React.MouseEvent | MouseEvent) => {
     if (isDraggingScreen) {
       saveStateToHistory(generatedScreens);
     }
+    
+    // Finalize shape
+    if (isDrawing && toolMode === 'shapes' && shapeStart && shapeMode) {
+      const lastEvent = (window as any).lastMouseEvent;
+      if (lastEvent && svgLayerRef.current) {
+        const rect = svgLayerRef.current.getBoundingClientRect();
+        const endX = lastEvent.clientX - rect.left;
+        const endY = lastEvent.clientY - rect.top;
+        
+        const width = Math.abs(endX - shapeStart.x);
+        const height = Math.abs(endY - shapeStart.y);
+        const minX = Math.min(shapeStart.x, endX);
+        const minY = Math.min(shapeStart.y, endY);
+        
+        if (width > 5 && height > 5) {
+          setShapes(prev => [...prev, {
+            id: `shape-${Date.now()}`,
+            type: shapeMode,
+            x: minX,
+            y: minY,
+            width,
+            height,
+            color: customColor
+          }]);
+        }
+      }
+      setShapeStart(null);
+    }
+    
     setIsPanning(false);
     setIsDrawing(false);
     setIsDraggingScreen(false);
@@ -317,23 +375,36 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     // Ignore clicks on buttons, inputs, or other UI elements
     if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
     
-    const drawingColor = toolMode === 'eraser' ? 'transparent' : customColor;
+    if (!svgLayerRef.current) return;
     
+    const rect = svgLayerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Pen or Eraser
     if (toolMode === 'pen' || toolMode === 'eraser') {
       setIsDrawing(true);
-      
-      if (!svgLayerRef.current) return;
-      
-      const rect = svgLayerRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
+      const drawingColor = toolMode === 'eraser' ? 'transparent' : customColor;
       setDrawings(p => [...p, { 
         color: drawingColor, 
         points: [{ x, y }], 
         strokeWidth: strokeSize, 
         isEraser: toolMode === 'eraser' 
       }]);
+      return;
+    }
+    
+    // Shapes
+    if (toolMode === 'shapes' && shapeMode) {
+      setIsDrawing(true);
+      setShapeStart({ x, y });
+      return;
+    }
+    
+    // Text
+    if (toolMode === 'text') {
+      const textId = `text-${Date.now()}`;
+      setTextBoxes(prev => [...prev, { id: textId, x, y, text: 'Click to edit' }]);
       return;
     }
 
@@ -624,6 +695,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
+            {/* Pen drawings */}
             {drawings.map((d, i) => 
               d.isEraser ? (
                 <circle 
@@ -649,7 +721,132 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                 />
               )
             )}
+            
+            {/* Shapes */}
+            {shapes.map(shape => {
+              if (shape.type === 'rect') {
+                return (
+                  <rect
+                    key={shape.id}
+                    x={shape.x}
+                    y={shape.y}
+                    width={shape.width}
+                    height={shape.height}
+                    fill="none"
+                    stroke={shape.color}
+                    strokeWidth="2"
+                  />
+                );
+              } else if (shape.type === 'circle') {
+                return (
+                  <circle
+                    key={shape.id}
+                    cx={shape.x + shape.width / 2}
+                    cy={shape.y + shape.height / 2}
+                    r={Math.min(shape.width, shape.height) / 2}
+                    fill="none"
+                    stroke={shape.color}
+                    strokeWidth="2"
+                  />
+                );
+              } else if (shape.type === 'triangle') {
+                const points = `${shape.x + shape.width / 2},${shape.y} ${shape.x},${shape.y + shape.height} ${shape.x + shape.width},${shape.y + shape.height}`;
+                return (
+                  <polygon
+                    key={shape.id}
+                    points={points}
+                    fill="none"
+                    stroke={shape.color}
+                    strokeWidth="2"
+                  />
+                );
+              }
+              return null;
+            })}
+            
+            {/* Shape preview while drawing */}
+            {isDrawing && toolMode === 'shapes' && shapeStart && svgLayerRef.current && (() => {
+              const rect = svgLayerRef.current!.getBoundingClientRect();
+              const currentEvent = (window as any).lastMouseEvent;
+              if (!currentEvent) return null;
+              
+              const endX = currentEvent.clientX - rect.left;
+              const endY = currentEvent.clientY - rect.top;
+              const width = Math.abs(endX - shapeStart.x);
+              const height = Math.abs(endY - shapeStart.y);
+              const minX = Math.min(shapeStart.x, endX);
+              const minY = Math.min(shapeStart.y, endY);
+              
+              if (shapeMode === 'rect') {
+                return (
+                  <rect
+                    key="preview"
+                    x={minX}
+                    y={minY}
+                    width={width}
+                    height={height}
+                    fill="none"
+                    stroke={customColor}
+                    strokeWidth="2"
+                    strokeDasharray="5,5"
+                    opacity={0.7}
+                  />
+                );
+              } else if (shapeMode === 'circle') {
+                return (
+                  <circle
+                    key="preview"
+                    cx={minX + width / 2}
+                    cy={minY + height / 2}
+                    r={Math.min(width, height) / 2}
+                    fill="none"
+                    stroke={customColor}
+                    strokeWidth="2"
+                    strokeDasharray="5,5"
+                    opacity={0.7}
+                  />
+                );
+              } else if (shapeMode === 'triangle') {
+                const points = `${minX + width / 2},${minY} ${minX},${minY + height} ${minX + width},${minY + height}`;
+                return (
+                  <polygon
+                    key="preview"
+                    points={points}
+                    fill="none"
+                    stroke={customColor}
+                    strokeWidth="2"
+                    strokeDasharray="5,5"
+                    opacity={0.7}
+                  />
+                );
+              }
+              return null;
+            })()}
           </svg>
+          
+          {/* Text boxes */}
+          {textBoxes.map(textBox => (
+            <div
+              key={textBox.id}
+              style={{
+                position: 'absolute',
+                left: textBox.x,
+                top: textBox.y,
+                zIndex: 50
+              }}
+              className="bg-white text-black p-2 rounded border border-gray-300 shadow-md"
+            >
+              <input
+                type="text"
+                value={textBox.text}
+                onChange={(e) => setTextBoxes(prev => 
+                  prev.map(tb => tb.id === textBox.id ? { ...tb, text: e.target.value } : tb)
+                )}
+                className="outline-none bg-transparent border-none w-auto min-w-[100px]"
+                autoFocus
+              />
+            </div>
+          ))}
         </div>
 
         {/* Drawing Layer Overlay */}
