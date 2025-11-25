@@ -1,5 +1,5 @@
 // Hero image and background
-export const HERO_IMAGE_URL = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1600&h=600&fit=crop&q=95";
+export const HERO_IMAGE_URL = "https://i.ibb.co/TB7TwKbS/Gemini-Generated-Image-fqobwbfqobwbfqob.png";
 export const HERO_BACKGROUND_GRADIENT = "none";
 
 // Unsplash image collection
