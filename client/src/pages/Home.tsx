@@ -61,12 +61,12 @@ export default function Home({ projects, onCreate, onDelete, onOpen }: HomeProps
         </div>
 
         {/* Content - Below Image */}
-        <div className="w-full bg-[#0a0a0a] p-10 text-center border-b border-white/5">
+        <div className="w-full bg-[#0a0a0a] p-10 text-center border-b border-white/5 -mt-20 pt-20 relative z-20">
           <h2 className="text-5xl font-extrabold tracking-tighter text-white mb-4 leading-tight" data-testid="text-hero-title">
             AI-Powered UI Generation.
           </h2>
           <p className="text-lg text-neutral-400 max-w-3xl mx-auto mb-6" data-testid="text-hero-subtitle">
-            Instantly generate, inspect, and export high-fidelity designs for any platform using clean Tailwind CSS code.
+            Instantly generate, inspect, and export high-fidelity designs for any platform.
           </p>
           <button 
             onClick={onCreate} 
