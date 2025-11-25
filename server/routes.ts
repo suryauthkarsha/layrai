@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { GoogleGenAI } from "@google/genai";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { getPexelsImagesUrls } from "./lib/pexels";
+import { getRandomImages } from "./lib/image-db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -38,17 +38,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "API key not configured" });
       }
 
-      // Log key validation with more detail
-      const keyStart = apiKey.substring(0, 15);
-      const keyEnd = apiKey.substring(apiKey.length - 5);
-      console.log(`[API] Using GEMINI_API_KEY (${keyStart}...${keyEnd})`);
-
-      // Fetch real images from Pexels
-      const imageKeywords = ['abstract', 'modern', 'minimalist', 'technology', 'design', 'colorful', 'elegant', 'professional'];
-      const selectedKeywords = imageKeywords.slice(0, Math.min(3, screenCount || 1));
-      const imageUrls = await getPexelsImagesUrls(selectedKeywords);
+      // Use pre-made image database (no API call needed - speeds up generation!)
+      const imageUrls = getRandomImages(Math.min(3, screenCount || 1));
       
       const systemPrompt = getSystemPrompt(screenCount || 1, platform || 'mobile', [], imageUrls);
+
+      console.log(`[Generation] Starting UI generation for ${screenCount} screen(s)...`);
+      const startTime = Date.now();
 
       const ai = new GoogleGenAI({ apiKey });
       const geminiResponse = await ai.models.generateContent({
@@ -59,6 +55,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }]
         }]
       });
+
+      const generationTime = Date.now() - startTime;
+      console.log(`[Generation] AI response received in ${generationTime}ms`);
 
       if (!geminiResponse?.candidates?.[0]?.content?.parts?.[0]?.text) {
         return res.status(500).json({ error: "No content generated" });
@@ -85,6 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      console.log(`[Generation] Extracted ${extractedHtml.length} screen(s)`);
       res.json({ screens: extractedHtml });
     } catch (error: any) {
       console.error('Generation error:', error);

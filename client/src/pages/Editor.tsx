@@ -212,9 +212,21 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     setActiveScreenIndex(0);
 
     try {
+      // Simulate progress during API call (this is the longest part)
+      const progressInterval = setInterval(() => {
+        setGenerationProgress(prev => {
+          // Increment slowly, but never reach 100% until done
+          if (prev < 85) {
+            return prev + Math.random() * 15;
+          }
+          return prev;
+        });
+      }, 300);
+
       const extractedHtml = await generateUI(prompt, screenCount, platform);
       
-      setGenerationProgress(70);
+      clearInterval(progressInterval);
+      setGenerationProgress(90);
 
       const finalScreens = newScreens.map((screen, idx) => ({
         ...screen,
@@ -224,7 +236,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
       setGeneratedScreens(finalScreens);
       setGenerationProgress(100);
-      setActivePanel(null);
+      
+      // Close panel after showing completion
+      setTimeout(() => setActivePanel(null), 800);
     } catch (e: any) {
       console.error(e);
       alert(`Generation failed: ${e.message}`);
