@@ -46,6 +46,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const sidebarIsOpened = !!activePanel;
   const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
@@ -96,17 +97,11 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   }, [toolMode, isPanning, zoom]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser')) {
-      const canvasContainer = canvasRef.current;
-      if (!canvasContainer) return;
-      
-      const rect = canvasContainer.getBoundingClientRect();
-      const scrollLeft = canvasContainer.scrollLeft;
-      const scrollTop = canvasContainer.scrollTop;
-      
-      // Account for canvas container position and scroll
-      const x = (e.clientX - rect.left + scrollLeft) / zoom;
-      const y = (e.clientY - rect.top + scrollTop) / zoom;
+    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser') && drawingCanvasRef.current) {
+      const canvas = drawingCanvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
       
       setDrawings(prev => {
         if (prev.length === 0) return prev;
@@ -324,18 +319,13 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     const drawingColor = toolMode === 'eraser' ? 'transparent' : customColor;
     
     if (toolMode === 'pen' || toolMode === 'eraser') {
+      if (!drawingCanvasRef.current) return;
       setIsDrawing(true);
       
-      const canvasContainer = canvasRef.current;
-      if (!canvasContainer) return;
-      
-      const rect = canvasContainer.getBoundingClientRect();
-      const scrollLeft = canvasContainer.scrollLeft;
-      const scrollTop = canvasContainer.scrollTop;
-      
-      // Account for canvas container position and scroll
-      const x = (e.clientX - rect.left + scrollLeft) / zoom;
-      const y = (e.clientY - rect.top + scrollTop) / zoom;
+      const canvas = drawingCanvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
       
       setDrawings(p => [...p, { 
         color: drawingColor, 
@@ -565,48 +555,54 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               gap: '200px' 
             }}
           >
-            <svg id="drawing-layer" className="canvas-drawing absolute inset-0 overflow-visible z-40" 
+            <canvas 
+              ref={drawingCanvasRef}
+              id="drawing-layer" 
+              className="canvas-drawing absolute inset-0 z-40"
               style={{ 
-                minWidth: 'fit-content', 
-                minHeight: 'fit-content',
                 pointerEvents: isDrawingToolActive ? 'auto' : 'none',
                 left: 0,
                 top: 0,
                 position: 'absolute',
                 width: '100%',
-                height: '100%'
+                height: '100%',
+                cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : 'default'
               }}
-            >
-              {drawings.map((d, i) => 
-                d.isEraser ? (
-                  <circle 
-                    key={i}
-                    cx={d.points[d.points.length - 1]?.x || 0}
-                    cy={d.points[d.points.length - 1]?.y || 0}
-                    r={d.strokeWidth / 2}
-                    fill="rgba(255, 255, 255, 0.1)"
-                    stroke="rgba(255, 255, 255, 0.2)"
-                    strokeWidth="1"
-                    opacity={0.5}
-                  />
-                ) : (
-                  <path 
-                    key={i} 
-                    d={`M ${d.points.map(p => `${p.x} ${p.y}`).join(' L ')}`} 
-                    stroke={d.color} 
-                    strokeWidth={d.strokeWidth} 
-                    fill="none" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    style={{ 
-                      mixBlendMode: 'normal',
-                      opacity: 0.9,
-                      stroke: d.color
-                    }} 
-                  />
-                )
-              )}
-            </svg>
+              onMouseDown={isDrawingToolActive ? handleMouseDown : undefined}
+              onMouseMove={isDrawingToolActive ? handleMouseMove : undefined}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            />
+            {/* Canvas drawing effect */}
+            {isDrawingToolActive && (
+              <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 40, width: '100%', height: '100%' }}>
+                {drawings.map((d, i) => 
+                  d.isEraser ? (
+                    <circle 
+                      key={i}
+                      cx={d.points[d.points.length - 1]?.x || 0}
+                      cy={d.points[d.points.length - 1]?.y || 0}
+                      r={d.strokeWidth / 2}
+                      fill="rgba(255, 255, 255, 0.1)"
+                      stroke="rgba(255, 255, 255, 0.3)"
+                      strokeWidth="1"
+                      opacity={0.6}
+                    />
+                  ) : (
+                    <path 
+                      key={i} 
+                      d={`M ${d.points.map(p => `${p.x} ${p.y}`).join(' L ')}`} 
+                      stroke={d.color} 
+                      strokeWidth={d.strokeWidth} 
+                      fill="none" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                      opacity={0.9}
+                    />
+                  )
+                )}
+              </svg>
+            )}
             
             {/* Initial placeholder */}
             {generatedScreens.length === 0 && !isGenerating && (
