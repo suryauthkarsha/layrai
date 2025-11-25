@@ -5,7 +5,8 @@ import {
   Plus,
   Trash2, MoveVertical, LayoutTemplate, FileCode, FileImage, FileText, ChevronDown,
   Camera, PenTool, Hand, RotateCcw, ArrowLeft, Eraser, MinusCircle, PlusCircle,
-  Loader2, MousePointer2, Layers, Box, Image as ImageIcon, PanelLeftClose
+  Loader2, MousePointer2, Layers, Box, Image as ImageIcon, PanelLeftClose,
+  Type, Square, Circle, Triangle
 } from 'lucide-react';
 import type { Project, Screen, Drawing } from '@shared/schema';
 import { IframeRenderer } from '@/components/IframeRenderer';
@@ -27,10 +28,12 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [generatedScreens, setGeneratedScreens] = useState<Screen[]>(project.data.screens || []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [toolMode, setToolMode] = useState<'cursor' | 'hand' | 'pen' | 'eraser'>('cursor');
+  const [toolMode, setToolMode] = useState<'cursor' | 'hand' | 'pen' | 'eraser' | 'text' | 'shapes'>('cursor');
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [strokeSize, setStrokeSize] = useState(4);
+  const [shapeMode, setShapeMode] = useState<'rect' | 'circle' | 'triangle' | null>(null);
+  const [showShapeMenu, setShowShapeMenu] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -45,7 +48,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const sidebarIsOpened = !!activePanel;
-  const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser';
+  const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
   const isInteracting = isPanning || isDrawingToolActive || isDraggingScreen;
 
   const fixedUILeft = sidebarIsOpened ? `calc(50% + 144px)` : '50%';
@@ -119,7 +122,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     setIsPanning(false);
     setIsDrawing(false);
     setIsDraggingScreen(false);
-    if (toolMode === 'pen' || toolMode === 'eraser') setToolMode('cursor');
+    if (toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes') setToolMode('cursor');
   };
 
   // Save to parent
@@ -262,7 +265,21 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       a.href = url;
       a.download = `${s.name}.html`;
       a.click();
+    } else if (type === 'html-all') {
+      // Export all screens as combined HTML
+      let combinedHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>All Screens</title><style>body{margin:0;padding:20px;background:#050505;display:flex;flex-wrap:wrap;gap:20px;}.screen{border:2px solid #333;background:#1a1a1a;}iframe{width:100%;height:100%;border:none;}</style></head><body>';
+      generatedScreens.forEach((screen, i) => {
+        combinedHtml += `<div class="screen" style="width:${getFrameWidth()}px;height:${getFrameHeight()}px;"><iframe srcdoc="${screen.rawHtml.replace(/"/g, '&quot;')}"></iframe></div>`;
+      });
+      combinedHtml += '</body></html>';
+      const blob = new Blob([combinedHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `layr_all_screens.html`;
+      a.click();
     } else if (type === 'png') {
+      // Capture all visible screens
       captureElement(null, 3, true).then(c => {
         if (c) {
           const a = document.createElement('a');
@@ -313,7 +330,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
   const setSoloToolMode = (tool: typeof toolMode) => {
     setToolMode(tool);
-    if (tool !== 'pen' && tool !== 'eraser') {
+    if (tool !== 'pen' && tool !== 'eraser' && tool !== 'text' && tool !== 'shapes') {
       setStrokeSize(4);
     }
   };
@@ -383,7 +400,11 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     <div className="flex h-screen w-full bg-[#050505] text-neutral-200 font-sans overflow-hidden selection:bg-blue-500/30">
       <style>{`
         @keyframes subtle-pulse { 0%, 100% { box-shadow: 0 0 100px 50px rgba(59, 130, 246, 0.05); } 50% { box-shadow: 0 0 150px 80px rgba(59, 130, 246, 0.15); } }
-        #drawing-layer { mix-blend-mode: color-dodge; }
+        #drawing-layer { 
+          mix-blend-mode: normal;
+          pointer-events: auto;
+        }
+        .canvas-drawing { mix-blend-mode: normal; }
       `}</style>
 
       {/* Sidebar */}
@@ -435,9 +456,12 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               <Download size={14} /> Export <ChevronDown size={10} />
             </button>
             {exportMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-40 bg-[#1A1A1A]/90 border border-white/20 rounded-lg shadow-xl z-50 overflow-hidden backdrop-blur-md">
+              <div className="absolute top-full right-0 mt-2 w-48 bg-[#1A1A1A]/90 border border-white/20 rounded-lg shadow-xl z-50 overflow-hidden backdrop-blur-md">
                 <button onClick={() => handleExport('html', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-html">
-                  <FileCode size={14} className="text-blue-400" /> Download HTML
+                  <FileCode size={14} className="text-blue-400" /> This Screen HTML
+                </button>
+                <button onClick={() => handleExport('html-all', null)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-html-all">
+                  <FileCode size={14} className="text-cyan-400" /> All Screens HTML
                 </button>
                 <button onClick={() => handleExport('pdf', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-pdf">
                   <FileText size={14} className="text-red-400" /> Print PDF
@@ -495,23 +519,36 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               gap: '200px' 
             }}
           >
-            <svg id="drawing-layer" className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-50" style={{ minWidth: '100%', minHeight: '100%' }}>
-              {drawings.map((d, i) => (
-                <path 
-                  key={i} 
-                  d={`M ${d.points.map(p => `${p.x} ${p.y}`).join(' L ')}`} 
-                  stroke={d.color} 
-                  strokeWidth={d.strokeWidth} 
-                  fill="none" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  style={{ 
-                    mixBlendMode: d.isEraser ? ('destination-out' as any) : 'normal', 
-                    opacity: 1, 
-                    stroke: d.isEraser ? 'transparent' : d.color 
-                  }} 
-                />
-              ))}
+            <svg id="drawing-layer" className="canvas-drawing absolute inset-0 w-full h-full overflow-visible z-40" style={{ minWidth: '100%', minHeight: '100%', pointerEvents: isDrawingToolActive ? 'auto' : 'none' }}>
+              {drawings.map((d, i) => 
+                d.isEraser ? (
+                  <circle 
+                    key={i}
+                    cx={d.points[d.points.length - 1]?.x || 0}
+                    cy={d.points[d.points.length - 1]?.y || 0}
+                    r={d.strokeWidth / 2}
+                    fill="rgba(255, 255, 255, 0.1)"
+                    stroke="rgba(255, 255, 255, 0.2)"
+                    strokeWidth="1"
+                    opacity={0.5}
+                  />
+                ) : (
+                  <path 
+                    key={i} 
+                    d={`M ${d.points.map(p => `${p.x} ${p.y}`).join(' L ')}`} 
+                    stroke={d.color} 
+                    strokeWidth={d.strokeWidth} 
+                    fill="none" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    style={{ 
+                      mixBlendMode: 'normal',
+                      opacity: 0.9,
+                      stroke: d.color
+                    }} 
+                  />
+                )
+              )}
             </svg>
             
             {/* Initial placeholder */}
@@ -564,6 +601,15 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           </div>
         </div>
 
+        {/* Drawing Layer Overlay */}
+        <div 
+          id="drawing-layer-overlay" 
+          className={`absolute inset-0 z-50 ${isDrawingToolActive ? 'pointer-events-auto' : 'pointer-events-none'}`}
+          style={{
+            cursor: toolMode === 'text' ? 'text' : toolMode === 'shapes' ? 'crosshair' : 'auto'
+          }}
+        />
+
         {/* Bottom Dock */}
         <div className="absolute bottom-8 z-[100] p-2 rounded-2xl bg-[#1A1A1A]/70 border border-white/20 shadow-2xl backdrop-blur-xl flex items-center gap-2 transition-all no-print" style={fixedUIStyle}>
           <div className="flex gap-1">
@@ -585,6 +631,27 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             <button onClick={() => setSoloToolMode('eraser')} className={`p-2.5 rounded-xl ${toolMode === 'eraser' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Eraser" data-testid="button-tool-eraser">
               <Eraser size={18} />
             </button>
+            <button onClick={() => setSoloToolMode('text')} className={`p-2.5 rounded-xl ${toolMode === 'text' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Text" data-testid="button-tool-text">
+              <Type size={18} />
+            </button>
+            <div className="relative">
+              <button onClick={() => setShowShapeMenu(!showShapeMenu)} className={`p-2.5 rounded-xl ${toolMode === 'shapes' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Shapes" data-testid="button-tool-shapes">
+                <Box size={18} />
+              </button>
+              {showShapeMenu && (
+                <div className="absolute bottom-full mb-2 left-0 flex gap-1 bg-[#1A1A1A] p-2 rounded-lg border border-white/10">
+                  <button onClick={() => { setToolMode('shapes'); setShapeMode('rect'); setShowShapeMenu(false); }} className="p-2 rounded hover:bg-white/20" title="Rectangle" data-testid="button-shape-rect">
+                    <Square size={14} />
+                  </button>
+                  <button onClick={() => { setToolMode('shapes'); setShapeMode('circle'); setShowShapeMenu(false); }} className="p-2 rounded hover:bg-white/20" title="Circle" data-testid="button-shape-circle">
+                    <Circle size={14} />
+                  </button>
+                  <button onClick={() => { setToolMode('shapes'); setShapeMode('triangle'); setShowShapeMenu(false); }} className="p-2 rounded hover:bg-white/20" title="Triangle" data-testid="button-shape-triangle">
+                    <Triangle size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
             {isDrawingToolActive && (
               <div className="flex items-center gap-2 bg-[#1A1A1A] p-2 rounded-xl border border-white/10">
                 <MinusCircle size={14} className="text-neutral-400" />

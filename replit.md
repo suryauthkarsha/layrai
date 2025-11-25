@@ -91,23 +91,36 @@ Drawing {
 
 ### Canvas & Editor Features
 
-**Tool Modes**:
+**Tool Modes** (Bottom Dock):
 - Cursor: Standard selection/interaction
 - Hand: Panning navigation
 - Pen: Freehand drawing with customizable stroke size/color
-- Eraser: Remove drawing strokes
+- Eraser: Visual preview indicator for eraser area with semi-transparent circle
+- Text: Add and edit text boxes on the canvas
+- Shapes: Add geometric shapes with dropdown menu:
+  - Rectangle (Rect)
+  - Circle
+  - Triangle
+
+**Drawing Controls**:
+- Stroke size slider (1-20px range) - appears when pen/eraser/text/shapes active
+- Custom color picker for pen strokes
+- Undo functionality for drawing operations
 
 **Viewport Management**:
-- Zoom controls (0.85 default scale)
+- Zoom controls (0.85 default scale, 0.2-3.0 range)
 - Pan/scroll for large canvases
-- Draggable screen positioning
+- Draggable screen positioning with visual feedback
 - Interaction mode toggles pointer events on iframe
+- Grid background (enabled at zoom >= 20%)
 
-**Export Capabilities**:
-- PDF export (individual screens or full viewport)
-- PNG image export with configurable scale (3x default)
-- HTML/code export of generated markup
-- External library: html2canvas for rendering
+**Export Capabilities** (Multi-Format):
+- **HTML Export**: 
+  - Single screen HTML download
+  - All screens combined HTML (new) - wraps all screens in iframe containers
+- **PDF Export**: Individual screen to PDF
+- **PNG Export**: Full viewport canvas snapshot at 3x scale
+- External libraries: html2canvas for rendering, jsPDF for PDF generation
 
 ### AI Integration Design
 
@@ -120,12 +133,17 @@ Drawing {
 4. Response parsing extracts HTML from markdown code blocks
 5. Screen creation with HTML injected into iframe renderer
 
-**Prompt Engineering**:
+**Prompt Engineering** (Enhanced for Quality):
 - Enforces raw HTML output only (no JSON wrapping)
-- Requests Tailwind CSS styling
-- Specifies image handling (Unsplash random or gradients)
-- Mandates full-viewport layout classes
+- Requests Tailwind CSS styling with hover effects and transitions
+- **MANDATORY image usage**: Every design must include 1-3 images/visual assets
+  - Unsplash URLs with keywords: `https://source.unsplash.com/random/800x600/?keyword`
+  - CSS gradients for backgrounds
+  - SVG icons and illustrations embedded as `<svg>` tags
+  - Never generates empty `<img>` tags
+- Mandates full-viewport layout classes (w-full h-full min-h-screen)
 - Prohibits JavaScript in generated code
+- Includes visual depth with shadows and layering
 
 **Error Handling**: Exponential backoff retry mechanism, progress tracking during generation
 
@@ -147,6 +165,38 @@ Drawing {
 - Body: 0.875rem/sm normal
 - Caption: 0.75rem/xs normal
 - Code: 0.75rem/xs monospace
+
+## Recent Updates (Session)
+
+### Authentication System Implementation
+- Integrated Replit Auth with PostgreSQL database
+- Created user sessions table with `connect-pg-simple`
+- Implemented login flow with multiple providers (Google, GitHub, X, Apple, email/password)
+- Created Landing page for logged-out users
+- Protected home page and editor for authenticated users
+- User state managed via TanStack Query (`useAuth` hook)
+
+### Enhanced Editor Tools
+- Added **Text Tool**: Icon-based text editing on canvas
+- Added **Shapes Tool**: Geometric shape insertion with submenu
+  - Rectangle
+  - Circle
+  - Triangle
+- Improved **Eraser Tool**: Visual semi-transparent circle preview showing eraser area
+- Fixed SVG layer pointer events for proper tool interaction
+
+### Image Generation Improvements
+- Updated Gemini system prompt to mandate image usage
+- Enforces minimum 1-3 images per design
+- Supports Unsplash random image URLs with keywords
+- CSS gradients and SVG icons as alternatives
+- Examples provided in prompt for good vs. bad patterns
+
+### Export Enhancements
+- Added "All Screens HTML" export option
+- Combines all screens into single HTML file with iframe containers
+- Maintains responsive design and styling
+- Easier multi-screen sharing and deployment
 
 ## External Dependencies
 
