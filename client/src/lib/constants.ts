@@ -50,7 +50,7 @@ export const PRESET_THEMES = {
 
 // Platform dimensions
 export const PLATFORM_DIMENSIONS = {
-  mobile: { width: 375, height: 812 },
-  desktop: { width: 1440, height: 900 },
-  general: { width: 1200, height: 800 },
+  mobile: { width: 812, height: 812 },
+  desktop: { width: 900, height: 900 },
+  general: { width: 800, height: 800 },
 } as const;

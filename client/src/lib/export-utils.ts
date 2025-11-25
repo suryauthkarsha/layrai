@@ -19,6 +19,7 @@ export const loadScript = (src: string): Promise<void> => new Promise((resolve, 
 // Capture element as canvas using html2canvas
 export const captureElement = async (
   elementId: string | null, 
+  filename?: string,
   scaleFactor = 3, 
   fullViewport = false
 ): Promise<HTMLCanvasElement | null> => {
@@ -31,6 +32,7 @@ export const captureElement = async (
     backgroundColor: '#050505', 
     scale: scaleFactor, 
     useCORS: true, 
+    allowTaint: true,
     logging: false 
   };
   
@@ -38,7 +40,7 @@ export const captureElement = async (
     const element = document.querySelector('.viewport-container') as HTMLElement;
     if (!element) return null;
     // @ts-ignore
-    return window.html2canvas(element, { 
+    const canvas = await window.html2canvas(element, { 
       ...options, 
       x: element.scrollLeft, 
       y: element.scrollTop, 
@@ -47,12 +49,26 @@ export const captureElement = async (
       windowWidth: element.clientWidth, 
       windowHeight: element.clientHeight 
     });
+    if (canvas && filename) {
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = `${filename}.png`;
+      a.click();
+    }
+    return canvas;
   } else {
     if (!elementId) return null;
     const element = document.getElementById(elementId);
     if (!element) return null;
     // @ts-ignore
-    return window.html2canvas(element, options);
+    const canvas = await window.html2canvas(element, options);
+    if (canvas && filename) {
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = `${filename}.png`;
+      a.click();
+    }
+    return canvas;
   }
 };
 

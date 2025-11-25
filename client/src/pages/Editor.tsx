@@ -59,7 +59,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
   const isInteracting = isPanning || isDrawingToolActive || isDraggingScreen;
 
-  const fixedUILeft = sidebarIsOpened ? 'calc(50% + 250px)' : '50%';
+  const fixedUILeft = sidebarIsOpened ? 'calc(50% + 375px)' : '50%';
   const fixedUIStyle: React.CSSProperties = {
     position: 'fixed',
     left: fixedUILeft as any,
@@ -407,6 +407,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       a.download = `screen-${screenIndex}.html`;
       a.click();
     } else if (format === 'html-all') {
+      const dims = PLATFORM_DIMENSIONS[platform];
       const wrappedHtml = `
         <!DOCTYPE html>
         <html lang="en">
@@ -419,16 +420,17 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             body { margin: 0; padding: 0; background: #000; }
             .screen-container { display: flex; gap: 2rem; padding: 2rem; flex-wrap: wrap; justify-content: center; }
             .screen-frame { border: 8px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8); }
-            .screen-frame.mobile { width: 375px; border-radius: 50px; }
-            .screen-frame.desktop { width: 1200px; }
-            iframe { border: none; display: block; }
+            .screen-frame.mobile { width: ${dims.width}px; border-radius: 50px; }
+            .screen-frame.desktop { width: ${dims.width}px; }
+            .screen-frame.general { width: ${dims.width}px; }
+            iframe { border: none; display: block; width: 100%; height: ${dims.height}px; }
           </style>
         </head>
         <body>
           <div class="screen-container">
             ${generatedScreens.map((screen, idx) => `
               <div class="screen-frame ${platform}">
-                <iframe srcdoc="${screen.rawHtml.replace(/"/g, '&quot;')}" style="width: 100%; height: ${getFrameHeight()}px;"></iframe>
+                <iframe srcdoc="${screen.rawHtml.replace(/"/g, '&quot;')}" style="width: 100%; height: ${dims.height}px;"></iframe>
               </div>
             `).join('')}
           </div>
@@ -442,7 +444,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     } else if (format === 'pdf' && screenIndex !== null) {
       exportPDF(`screen-${screenIndex}`, generatedScreens[screenIndex].name);
     } else if (format === 'png') {
-      captureElement('canvas-root', `screens-${Date.now()}.png`, 3);
+      await captureElement(null, `screens-${Date.now()}`, 3, true);
     }
   };
 
@@ -478,7 +480,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
       {/* Sidebar */}
       {activePanel === 'generate' && (
-        <div className="w-[500px] bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
+        <div className="w-[750px] bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
           <div className="flex items-center justify-between p-5 border-b border-white/10">
             <h2 className="text-sm font-bold text-white" data-testid="heading-generate">Generate UI</h2>
             <button onClick={() => setActivePanel(null)} className="p-1 hover:bg-white/10 rounded" data-testid="button-close-panel">
@@ -687,13 +689,13 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                     <button onClick={(e) => { e.stopPropagation(); deleteComponent(idx); }} className="p-2 hover:bg-red-500/20 hover:text-red-400 rounded text-neutral-400" title="Delete" data-testid={`button-delete-screen-${idx}`}>
                       <Trash2 size={14} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleExport('png', idx); }} className="p-2 hover:bg-white/10 rounded text-neutral-400 hover:text-white" title="Save" data-testid={`button-export-screen-${idx}`}>
+                    <button onClick={(e) => { e.stopPropagation(); captureElement(`screen-${idx}`, `screen-${idx}`); }} className="p-2 hover:bg-white/10 rounded text-neutral-400 hover:text-white" title="Save" data-testid={`button-export-screen-${idx}`}>
                       <Camera size={14} />
                     </button>
                   </div>
                 </div>
                 <div 
-                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[375px] rounded-[50px]' : 'w-[1200px] rounded-xl'}`} 
+                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[812px] rounded-[50px]' : platform === 'desktop' ? 'w-[900px] rounded-xl' : 'w-[800px] rounded-xl'}`} 
                   style={{ height: getFrameHeight() + 'px' }}
                 >
                   {platform === 'mobile' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a1a] rounded-b-xl z-20 pointer-events-none"></div>}
