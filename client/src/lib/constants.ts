@@ -1,5 +1,5 @@
 // Hero image and background
-export const HERO_IMAGE_URL = "https://i.ibb.co/TB7TwKbS/Gemini-Generated-Image_fqobwbfqobwbfqob.png";
+export const HERO_IMAGE_URL = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1600&h=600&fit=crop&q=95";
 export const HERO_BACKGROUND_GRADIENT = "none";
 
 // Unsplash image collection
@@ -50,7 +50,7 @@ export const PRESET_THEMES = {
 
 // Platform dimensions
 export const PLATFORM_DIMENSIONS = {
-  mobile: { width: 812, height: 812 },
-  desktop: { width: 900, height: 900 },
-  general: { width: 800, height: 800 },
+  mobile: { width: 375, height: 812 },
+  desktop: { width: 1440, height: 900 },
+  general: { width: 1200, height: 800 },
 } as const;

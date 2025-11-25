@@ -493,9 +493,15 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the UI you want..."
-                className="w-full h-20 bg-[#252525] border border-white/10 rounded-lg p-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    handleGenerate();
+                  }
+                }}
+                placeholder="Describe the UI you want... (spaces work fine)"
+                className="w-full h-20 bg-[#252525] border border-white/10 rounded-lg p-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50 resize-none"
                 data-testid="input-prompt"
+                spellCheck="false"
               />
             </div>
             <div>
@@ -503,15 +509,15 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               <div className="grid grid-cols-3 gap-1.5">
                 <button onClick={() => setPlatform('mobile')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'mobile' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-mobile">
                   <div className="text-xs font-semibold">Mobile</div>
-                  <div className="text-[10px] text-neutral-400">812x812</div>
+                  <div className="text-[10px] text-neutral-400">375x812</div>
                 </button>
                 <button onClick={() => setPlatform('desktop')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'desktop' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-desktop">
                   <div className="text-xs font-semibold">Desktop</div>
-                  <div className="text-[10px] text-neutral-400">900x900</div>
+                  <div className="text-[10px] text-neutral-400">1440x900</div>
                 </button>
                 <button onClick={() => setPlatform('general')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'general' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-general">
                   <div className="text-xs font-semibold">General</div>
-                  <div className="text-[10px] text-neutral-400">800x800</div>
+                  <div className="text-[10px] text-neutral-400">1200x800</div>
                 </button>
               </div>
             </div>
@@ -633,7 +639,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         >
           {/* Generation Progress */}
           {isGenerating && (
-            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[45] transition-all duration-300" style={fixedUIStyle}>
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[45] transition-all duration-300" style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 45 }}>
               <div className="absolute inset-0 m-[-150px] animate-[subtle-pulse_2s_ease-in-out_infinite] mix-blend-screen z-[20] rounded-full bg-blue-600/10 blur-[100px]"></div>
               <div className="relative p-6 rounded-xl bg-[#1A1A1A]/95 border border-blue-500/50 backdrop-blur-lg shadow-2xl shadow-blue-900/50 z-[40] flex flex-col items-center gap-2">
                 <Loader2 className="animate-spin text-blue-400" size={24} />
@@ -695,7 +701,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   </div>
                 </div>
                 <div 
-                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[812px] rounded-[50px]' : platform === 'desktop' ? 'w-[900px] rounded-xl' : 'w-[800px] rounded-xl'}`} 
+                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[375px] rounded-[50px]' : platform === 'desktop' ? 'w-[1440px] rounded-xl' : 'w-[1200px] rounded-xl'}`} 
                   style={{ height: getFrameHeight() + 'px' }}
                 >
                   {platform === 'mobile' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a1a] rounded-b-xl z-20 pointer-events-none"></div>}

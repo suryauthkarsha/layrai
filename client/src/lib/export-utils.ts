@@ -33,42 +33,48 @@ export const captureElement = async (
     scale: scaleFactor, 
     useCORS: true, 
     allowTaint: true,
-    logging: false 
+    logging: false,
+    imageTimeout: 0
   };
   
-  if (fullViewport) {
-    const element = document.querySelector('.viewport-container') as HTMLElement;
-    if (!element) return null;
-    // @ts-ignore
-    const canvas = await window.html2canvas(element, { 
-      ...options, 
-      x: element.scrollLeft, 
-      y: element.scrollTop, 
-      width: element.clientWidth, 
-      height: element.clientHeight, 
-      windowWidth: element.clientWidth, 
-      windowHeight: element.clientHeight 
-    });
-    if (canvas && filename) {
-      const a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
-      a.download = `${filename}.png`;
-      a.click();
+  try {
+    if (fullViewport) {
+      const element = document.querySelector('.viewport-container') as HTMLElement;
+      if (!element) return null;
+      // @ts-ignore
+      const canvas = await window.html2canvas(element, { 
+        ...options, 
+        x: element.scrollLeft, 
+        y: element.scrollTop, 
+        width: element.clientWidth, 
+        height: element.clientHeight, 
+        windowWidth: element.clientWidth, 
+        windowHeight: element.clientHeight 
+      });
+      if (canvas && filename) {
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `${filename}.png`;
+        a.click();
+      }
+      return canvas;
+    } else {
+      if (!elementId) return null;
+      const element = document.getElementById(elementId);
+      if (!element) return null;
+      // @ts-ignore
+      const canvas = await window.html2canvas(element, options);
+      if (canvas && filename) {
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `${filename}.png`;
+        a.click();
+      }
+      return canvas;
     }
-    return canvas;
-  } else {
-    if (!elementId) return null;
-    const element = document.getElementById(elementId);
-    if (!element) return null;
-    // @ts-ignore
-    const canvas = await window.html2canvas(element, options);
-    if (canvas && filename) {
-      const a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
-      a.download = `${filename}.png`;
-      a.click();
-    }
-    return canvas;
+  } catch (error) {
+    console.error('Capture error:', error);
+    return null;
   }
 };
 
