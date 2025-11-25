@@ -47,10 +47,10 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [shapeStart, setShapeStart] = useState<{ x: number; y: number } | null>(null);
   const [textBoxes, setTextBoxes] = useState<Array<{ id: string; x: number; y: number; text: string }>>([]);
   const [shapes, setShapes] = useState<Array<{ id: string; type: 'rect' | 'circle' | 'triangle'; x: number; y: number; width: number; height: number; color: string }>>([]);
+  const [shapePreview, setShapePreview] = useState<{ x: number; y: number } | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
-  const drawingCanvasRef = useRef<HTMLCanvasElement>(null);
-  const svgLayerRef = useRef<SVGSVGElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const sidebarIsOpened = !!activePanel;
   const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
@@ -84,43 +84,24 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     setGeneratedScreens(previousState);
   };
 
-  // Mouse Handlers
-  const handleDragStart = useCallback((e: React.MouseEvent, screenIndex: number) => {
-    if (toolMode !== 'cursor' || isPanning) return;
-    e.preventDefault();
-    setIsDraggingScreen(true);
-    setActiveScreenIndex(screenIndex);
-
-    const screenElement = e.currentTarget as HTMLElement;
-    const rect = screenElement.getBoundingClientRect();
-    
-    const offsetX = (e.clientX - rect.left) / zoom;
-    const offsetY = (e.clientY - rect.top) / zoom;
-    
-    setDragOffset({ x: offsetX, y: offsetY });
-  }, [toolMode, isPanning, zoom]);
-
-  // Redraw canvas
+  // Redraw overlay canvas
   useEffect(() => {
-    const canvas = drawingCanvasRef.current;
+    const canvas = overlayCanvasRef.current;
     if (!canvas) return;
-    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
-    // Clear canvas
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw all pen strokes
+
+    // Draw pen strokes
     drawings.forEach(d => {
-      if (d.isEraser) return; // Don't draw eraser marks
+      if (d.isEraser) return;
       ctx.strokeStyle = d.color;
       ctx.lineWidth = d.strokeWidth;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       
       if (d.points.length < 2) return;
-      
       ctx.beginPath();
       ctx.moveTo(d.points[0].x, d.points[0].y);
       for (let i = 1; i < d.points.length; i++) {
@@ -128,12 +109,11 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       }
       ctx.stroke();
     });
-    
-    // Draw all shapes
+
+    // Draw shapes
     shapes.forEach(shape => {
       ctx.strokeStyle = shape.color;
       ctx.lineWidth = 2;
-      ctx.fillStyle = 'transparent';
       
       if (shape.type === 'rect') {
         ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
@@ -150,126 +130,129 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         ctx.stroke();
       }
     });
-    
+
     // Draw shape preview
-    if (isDrawing && toolMode === 'shapes' && shapeStart) {
-      const end = (window as any).currentShapeEnd;
-      if (end) {
-        const width = Math.abs(end.x - shapeStart.x);
-        const height = Math.abs(end.y - shapeStart.y);
-        const minX = Math.min(shapeStart.x, end.x);
-        const minY = Math.min(shapeStart.y, end.y);
-        
-        ctx.strokeStyle = customColor;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        ctx.globalAlpha = 0.7;
-        
-        if (shapeMode === 'rect') {
-          ctx.strokeRect(minX, minY, width, height);
-        } else if (shapeMode === 'circle') {
-          ctx.beginPath();
-          ctx.arc(minX + width / 2, minY + height / 2, Math.min(width, height) / 2, 0, Math.PI * 2);
-          ctx.stroke();
-        } else if (shapeMode === 'triangle') {
-          ctx.beginPath();
-          ctx.moveTo(minX + width / 2, minY);
-          ctx.lineTo(minX, minY + height);
-          ctx.lineTo(minX + width, minY + height);
-          ctx.closePath();
-          ctx.stroke();
-        }
-        
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
-      }
-    }
-  }, [drawings, shapes, isDrawing, toolMode, shapeStart, shapeMode, customColor]);
+    if (isDrawing && toolMode === 'shapes' && shapeStart && shapePreview && shapeMode) {
+      const w = Math.abs(shapePreview.x - shapeStart.x);
+      const h = Math.abs(shapePreview.y - shapeStart.y);
+      const x = Math.min(shapeStart.x, shapePreview.x);
+      const y = Math.min(shapeStart.y, shapePreview.y);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const canvas = drawingCanvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // PEN DRAWING
-    if (isDrawing && toolMode === 'pen') {
+      ctx.strokeStyle = customColor;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.globalAlpha = 0.7;
+
+      if (shapeMode === 'rect') {
+        ctx.strokeRect(x, y, w, h);
+      } else if (shapeMode === 'circle') {
+        ctx.beginPath();
+        ctx.arc(x + w / 2, y + h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (shapeMode === 'triangle') {
+        ctx.beginPath();
+        ctx.moveTo(x + w / 2, y);
+        ctx.lineTo(x, y + h);
+        ctx.lineTo(x + w, y + h);
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+  }, [drawings, shapes, isDrawing, toolMode, shapeStart, shapePreview, shapeMode, customColor]);
+
+  // Setup canvas size
+  useEffect(() => {
+    const resizeCanvas = () => {
+      if (overlayCanvasRef.current) {
+        overlayCanvasRef.current.width = window.innerWidth;
+        overlayCanvasRef.current.height = window.innerHeight;
+      }
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
+
+  const handleOverlayMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
+    if (!isDrawingToolActive) return;
+
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (toolMode === 'pen') {
+      setIsDrawing(true);
+      setDrawings(prev => [...prev, { color: customColor, points: [{ x, y }], strokeWidth: strokeSize, isEraser: false }]);
+    } else if (toolMode === 'eraser') {
+      setIsDrawing(true);
+    } else if (toolMode === 'shapes' && shapeMode) {
+      setIsDrawing(true);
+      setShapeStart({ x, y });
+      setShapePreview({ x, y });
+    } else if (toolMode === 'text') {
+      setTextBoxes(prev => [...prev, { id: `text-${Date.now()}`, x, y, text: 'Edit text' }]);
+    }
+  };
+
+  const handleOverlayMouseMove = (e: React.MouseEvent) => {
+    if (!isDrawing) return;
+
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (toolMode === 'pen') {
       setDrawings(prev => {
-        if (prev.length === 0) return prev;
-        const lastDrawing = prev[prev.length - 1];
-        if (lastDrawing.isEraser) return prev;
-        
-        const newPoints = [...lastDrawing.points, { x, y }];
-        const updated = { ...lastDrawing, points: newPoints };
-        return [...prev.slice(0, -1), updated];
+        if (!prev.length) return prev;
+        const last = prev[prev.length - 1];
+        if (last.isEraser) return prev;
+        const newPoints = [...last.points, { x, y }];
+        return [...prev.slice(0, -1), { ...last, points: newPoints }];
       });
-      return;
-    }
-    
-    // ERASER
-    if (isDrawing && toolMode === 'eraser') {
-      const eraserRadius = strokeSize * 2;
-      setDrawings(prev => 
-        prev.filter(d => 
-          !d.isEraser && !d.points.some(p => {
-            const dist = Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2);
-            return dist < eraserRadius;
-          })
-        )
+    } else if (toolMode === 'eraser') {
+      const radius = strokeSize * 2;
+      setDrawings(prev =>
+        prev.filter(d => !d.isEraser && !d.points.some(p => Math.sqrt((p.x - x) ** 2 + (p.y - y) ** 2) < radius))
       );
-      return;
-    }
-    
-    // SHAPE DRAWING - store current position for preview
-    if (isDrawing && toolMode === 'shapes' && shapeStart) {
-      (window as any).currentShapeEnd = { x, y };
-      return;
-    }
-    
-    // PANNING
-    if (isPanning && canvasRef.current) {
-      canvasRef.current.scrollLeft = scrollStart.left - (e.clientX - panStart.x);
-      canvasRef.current.scrollTop = scrollStart.top - (e.clientY - panStart.y);
+    } else if (toolMode === 'shapes' && shapeStart) {
+      setShapePreview({ x, y });
     }
   };
 
-  const handleMouseUp = (e?: React.MouseEvent | MouseEvent) => {
-    if (isDraggingScreen) {
-      saveStateToHistory(generatedScreens);
-    }
-    
-    // FINALIZE SHAPE
-    if (isDrawing && toolMode === 'shapes' && shapeStart && shapeMode) {
-      const end = (window as any).currentShapeEnd;
-      if (end) {
-        const width = Math.abs(end.x - shapeStart.x);
-        const height = Math.abs(end.y - shapeStart.y);
-        
-        if (width > 10 && height > 10) {
-          const minX = Math.min(shapeStart.x, end.x);
-          const minY = Math.min(shapeStart.y, end.y);
-          
-          setShapes(prev => [...prev, {
-            id: `shape-${Date.now()}`,
-            type: shapeMode,
-            x: minX,
-            y: minY,
-            width,
-            height,
-            color: customColor
-          }]);
-        }
+  const handleOverlayMouseUp = () => {
+    if (isDrawing && toolMode === 'shapes' && shapeStart && shapePreview && shapeMode) {
+      const w = Math.abs(shapePreview.x - shapeStart.x);
+      const h = Math.abs(shapePreview.y - shapeStart.y);
+      
+      if (w > 10 && h > 10) {
+        const x = Math.min(shapeStart.x, shapePreview.x);
+        const y = Math.min(shapeStart.y, shapePreview.y);
+        setShapes(prev => [...prev, { id: `shape-${Date.now()}`, type: shapeMode, x, y, width: w, height: h, color: customColor }]);
       }
-      setShapeStart(null);
-      (window as any).currentShapeEnd = null;
     }
-    
-    setIsPanning(false);
+
     setIsDrawing(false);
-    setIsDraggingScreen(false);
+    setShapeStart(null);
+    setShapePreview(null);
   };
+
+  // Mouse Handlers for screen dragging
+  const handleDragStart = useCallback((e: React.MouseEvent, screenIndex: number) => {
+    if (toolMode !== 'cursor' || isPanning) return;
+    e.preventDefault();
+    setIsDraggingScreen(true);
+    setActiveScreenIndex(screenIndex);
+
+    const screenElement = e.currentTarget as HTMLElement;
+    const rect = screenElement.getBoundingClientRect();
+    
+    const offsetX = (e.clientX - rect.left) / zoom;
+    const offsetY = (e.clientY - rect.top) / zoom;
+    
+    setDragOffset({ x: offsetX, y: offsetY });
+  }, [toolMode, isPanning, zoom]);
 
   // Save to parent
   useEffect(() => {
@@ -301,37 +284,16 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     };
 
     window.addEventListener('mousemove', handleDragMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseup', () => {
+      if (isDraggingScreen) saveStateToHistory(generatedScreens);
+      setIsDraggingScreen(false);
+    });
 
     return () => {
       window.removeEventListener('mousemove', handleDragMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseup', () => {});
     };
-  }, [isDraggingScreen, activeScreenIndex, dragOffset, zoom]);
-
-  // Set up canvas dimensions
-  useEffect(() => {
-    if (drawingCanvasRef.current && canvasRef.current) {
-      const canvas = drawingCanvasRef.current;
-      const viewport = canvasRef.current;
-      
-      canvas.width = viewport.clientWidth;
-      canvas.height = viewport.clientHeight;
-    }
-    
-    const handleResize = () => {
-      if (drawingCanvasRef.current && canvasRef.current) {
-        const canvas = drawingCanvasRef.current;
-        const viewport = canvasRef.current;
-        
-        canvas.width = viewport.clientWidth;
-        canvas.height = viewport.clientHeight;
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isDraggingScreen, activeScreenIndex, dragOffset, zoom, generatedScreens]);
 
   // Center canvas
   useEffect(() => {
@@ -342,8 +304,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       const padding = 500;
 
       setTimeout(() => {
-        // Center horizontally and position below top bar
-        const screenPaddedWidth = screenWidth + 16; // account for border
+        const screenPaddedWidth = screenWidth + 16;
         const horizontalScrollTarget = padding - (el.clientWidth / 2) + (screenPaddedWidth / 2);
         const verticalScrollTarget = padding - (el.clientHeight / 2) + (screenHeight / 2) - 100;
         
@@ -379,10 +340,8 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     setActiveScreenIndex(0);
 
     try {
-      // Simulate progress during API call (this is the longest part)
       const progressInterval = setInterval(() => {
         setGenerationProgress(prev => {
-          // Increment slowly, but never reach 100% until done
           if (prev < 85) {
             return prev + Math.random() * 15;
           }
@@ -404,317 +363,209 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       setGeneratedScreens(finalScreens);
       setGenerationProgress(100);
       
-      // Close panel after showing completion
       setTimeout(() => setActivePanel(null), 800);
     } catch (e: any) {
       console.error(e);
       alert(`Generation failed: ${e.message}`);
     } finally {
       setIsGenerating(false);
+      setGenerationProgress(0);
     }
-  };
-
-  const addScreen = () => {
-    const h = getFixedScreenHeight();
-    const lastScreen = generatedScreens[generatedScreens.length - 1] || { x: 0, y: 0 };
-    const offsetX = (lastScreen.x || 0) + getFrameWidth() + 50;
-    const offsetY = lastScreen.y || 0;
-
-    const newS: Screen = { 
-      name: `Screen ${generatedScreens.length + 1}`, 
-      rawHtml: '<div class="w-full h-full bg-black text-white flex items-center justify-center">New Screen</div>', 
-      type: 'html', 
-      height: h, 
-      x: offsetX, 
-      y: offsetY 
-    };
-    const next = [...generatedScreens, newS];
-    saveStateToHistory(next);
-    setActiveScreenIndex(generatedScreens.length);
   };
 
   const deleteComponent = (idx: number) => {
-    if (!generatedScreens) return;
-    const next = [...generatedScreens];
-    next.splice(idx, 1);
-    saveStateToHistory(next);
-    if (activeScreenIndex >= next.length) setActiveScreenIndex(Math.max(0, next.length - 1));
+    saveStateToHistory(generatedScreens);
+    setGeneratedScreens(prev => prev.filter((_, i) => i !== idx));
+    if (activeScreenIndex >= idx && activeScreenIndex > 0) setActiveScreenIndex(activeScreenIndex - 1);
   };
 
-  const handleExport = (type: string, idx: number | null) => {
-    setExportMenuOpen(false);
-    if (!generatedScreens) return;
-    
-    if (type === 'html' && idx !== null) {
-      const s = generatedScreens[idx];
-      const blob = new Blob([s.rawHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
+  const handleExport = async (format: 'html' | 'html-all' | 'pdf' | 'png', screenIndex: number | null) => {
+    if (format === 'html' && screenIndex !== null) {
+      const html = generatedScreens[screenIndex].rawHtml;
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `${s.name}.html`;
+      a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+      a.download = `screen-${screenIndex}.html`;
       a.click();
-    } else if (type === 'html-all') {
-      // Export all screens as combined HTML
-      let combinedHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>All Screens</title><style>body{margin:0;padding:20px;background:#050505;display:flex;flex-wrap:wrap;gap:20px;}.screen{border:2px solid #333;background:#1a1a1a;}iframe{width:100%;height:100%;border:none;}</style></head><body>';
-      generatedScreens.forEach((screen, i) => {
-        combinedHtml += `<div class="screen" style="width:${getFrameWidth()}px;height:${getFrameHeight()}px;"><iframe srcdoc="${screen.rawHtml.replace(/"/g, '&quot;')}"></iframe></div>`;
-      });
-      combinedHtml += '</body></html>';
-      const blob = new Blob([combinedHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
+    } else if (format === 'html-all') {
+      const wrappedHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>All Screens</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { margin: 0; padding: 0; background: #000; }
+            .screen-container { display: flex; gap: 2rem; padding: 2rem; flex-wrap: wrap; justify-content: center; }
+            .screen-frame { border: 8px solid #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8); }
+            .screen-frame.mobile { width: 375px; border-radius: 50px; }
+            .screen-frame.desktop { width: 1200px; }
+            iframe { border: none; display: block; }
+          </style>
+        </head>
+        <body>
+          <div class="screen-container">
+            ${generatedScreens.map((screen, idx) => `
+              <div class="screen-frame ${platform}">
+                <iframe srcdoc="${screen.rawHtml.replace(/"/g, '&quot;')}" style="width: 100%; height: ${getFrameHeight()}px;"></iframe>
+              </div>
+            `).join('')}
+          </div>
+        </body>
+        </html>
+      `;
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `layr_all_screens.html`;
+      a.href = URL.createObjectURL(new Blob([wrappedHtml], { type: 'text/html' }));
+      a.download = 'all-screens.html';
       a.click();
-    } else if (type === 'png') {
-      // Capture all visible screens
-      captureElement(null, 3, true).then(c => {
-        if (c) {
-          const a = document.createElement('a');
-          a.href = c.toDataURL();
-          a.download = `layr_export.png`;
-          a.click();
-        }
-      });
-    } else if (type === 'pdf' && idx !== null) {
-      exportPDF(`screen-${idx}`, generatedScreens[idx].name);
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    // Ignore button/input clicks
-    const isUI = (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input');
-    if (isUI) return;
-    
-    if (!svgLayerRef.current) return;
-    
-    const svg = svgLayerRef.current;
-    const rect = svg.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // PEN TOOL
-    if (toolMode === 'pen') {
-      setIsDrawing(true);
-      setDrawings(prev => [...prev, {
-        color: customColor,
-        points: [{ x, y }],
-        strokeWidth: strokeSize,
-        isEraser: false
-      }]);
-      return;
-    }
-    
-    // ERASER TOOL
-    if (toolMode === 'eraser') {
-      setIsDrawing(true);
-      return;
-    }
-    
-    // SHAPES TOOL
-    if (toolMode === 'shapes' && shapeMode) {
-      setIsDrawing(true);
-      setShapeStart({ x, y });
-      (window as any).currentShapeEnd = { x, y };
-      return;
-    }
-    
-    // TEXT TOOL
-    if (toolMode === 'text') {
-      setTextBoxes(prev => [...prev, {
-        id: `text-${Date.now()}`,
-        x,
-        y,
-        text: 'Edit text'
-      }]);
-      return;
-    }
-    
-    // CURSOR - drag screens
-    const screenTarget = (e.target as HTMLElement).closest('.draggable-screen');
-    if (screenTarget && toolMode === 'cursor') {
-      const idx = parseInt((screenTarget as HTMLElement).dataset.index || '0', 10);
-      handleDragStart(e, idx);
-      return;
-    }
-    
-    // HAND / PAN
-    if ((toolMode === 'hand' || e.button === 1) && canvasRef.current) {
-      setIsPanning(true);
-      setPanStart({ x: e.clientX, y: e.clientY });
-      setScrollStart({ 
-        left: canvasRef.current.scrollLeft, 
-        top: canvasRef.current.scrollTop 
-      });
+    } else if (format === 'pdf' && screenIndex !== null) {
+      exportPDF(`screen-${screenIndex}`, generatedScreens[screenIndex].name);
+    } else if (format === 'png') {
+      captureElement('canvas-root', `screens-${Date.now()}.png`, 3);
     }
   };
 
   const setSoloToolMode = (tool: typeof toolMode) => {
     setToolMode(tool);
     if (tool !== 'pen' && tool !== 'eraser' && tool !== 'text' && tool !== 'shapes') {
-      setStrokeSize(4);
+      setShowShapeMenu(false);
     }
-  };
-
-  const togglePanel = (p: string) => setActivePanel(p === activePanel ? null : p);
-
-  const renderPanelContent = () => {
-    if (activePanel === 'ai') {
-      return (
-        <>
-          <div className="space-y-3">
-            <label className="text-[10px] font-bold text-neutral-500 uppercase">Prompt</label>
-            <textarea 
-              value={prompt} 
-              onChange={e => setPrompt(e.target.value)} 
-              placeholder="Describe the UI (e.g., 'Dark mode music player with album art')..." 
-              className="w-full h-32 bg-[#222] border border-white/10 rounded-lg p-3 text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none text-white"
-              data-testid="input-prompt"
-            />
-          </div>
-          <div className="space-y-3">
-            <label className="text-[10px] font-bold text-neutral-500 uppercase">Device</label>
-            <div className="flex gap-2 p-1 bg-[#222] rounded-lg">
-              {(['mobile', 'desktop'] as const).map(p => (
-                <button 
-                  key={p} 
-                  onClick={() => setPlatform(p)} 
-                  className={`flex-1 py-2 rounded text-xs font-medium transition-all ${platform === p ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`}
-                  data-testid={`button-platform-${p}`}
-                >
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-3 pt-3 border-t border-white/10">
-            <div className="flex justify-between">
-              <label className="text-[10px] font-bold text-neutral-500 uppercase">Screens to Generate</label>
-              <span className="text-xs text-blue-400 font-mono" data-testid="text-screen-count">{screenCount}</span>
-            </div>
-            <input 
-              type="range" 
-              min="1" 
-              max="5" 
-              value={screenCount} 
-              onChange={e => setScreenCount(Number(e.target.value))} 
-              className="w-full accent-blue-500 h-1 bg-white/10 rounded-lg appearance-none"
-              data-testid="input-screen-count"
-            />
-          </div>
-          <button 
-            onClick={handleGenerate} 
-            disabled={isGenerating || !prompt} 
-            className={`w-full py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 mt-6 transition-all ${isGenerating ? 'bg-blue-900/50 text-blue-200' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20'}`}
-            data-testid="button-generate"
-          >
-            {isGenerating ? <RefreshCw className="animate-spin w-4 h-4" /> : <Wand2 className="w-4 h-4" />}
-            {isGenerating ? 'Generating...' : 'Generate UI'}
-          </button>
-        </>
-      );
-    }
-    return <div className="text-neutral-500 text-sm text-center mt-10">Select a tool</div>;
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#050505] text-neutral-200 font-sans overflow-hidden selection:bg-blue-500/30">
-      <style>{`
-        @keyframes subtle-pulse { 0%, 100% { box-shadow: 0 0 100px 50px rgba(59, 130, 246, 0.05); } 50% { box-shadow: 0 0 150px 80px rgba(59, 130, 246, 0.15); } }
-        @keyframes blue-glow { 
-          0%, 100% { 
-            box-shadow: inset 0 0 40px rgba(59, 130, 246, 0.6), 0 0 80px rgba(59, 130, 246, 0.8), 0 0 120px rgba(59, 130, 246, 0.6);
-            border-color: rgba(59, 130, 246, 1);
-          } 
-          50% { 
-            box-shadow: inset 0 0 80px rgba(59, 130, 246, 1), 0 0 150px rgba(59, 130, 246, 1), 0 0 200px rgba(59, 130, 246, 0.8);
-            border-color: rgba(59, 130, 246, 1);
-          } 
-        }
-        #drawing-layer { 
-          mix-blend-mode: normal;
-          pointer-events: auto;
-        }
-        .canvas-drawing { mix-blend-mode: normal; }
-        .viewport-generating {
-          animation: blue-glow 1.5s ease-in-out infinite;
-          border: 3px solid rgba(59, 130, 246, 0.8);
-        }
-      `}</style>
+    <div className="flex h-screen bg-[#050505]">
+      {/* Overlay Canvas for Drawing */}
+      <canvas
+        ref={overlayCanvasRef}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          pointerEvents: isDrawingToolActive ? 'auto' : 'none',
+          zIndex: 40,
+          cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : toolMode === 'text' ? 'text' : 'auto'
+        }}
+        onMouseDown={handleOverlayMouseDown}
+        onMouseMove={handleOverlayMouseMove}
+        onMouseUp={handleOverlayMouseUp}
+        onMouseLeave={handleOverlayMouseUp}
+      />
 
       {/* Sidebar */}
-      <div className={`absolute top-0 left-0 h-full w-72 bg-[#0A0A0A]/95 border-r border-white/10 backdrop-blur-md z-[80] transition-transform duration-300 ease-in-out flex flex-col shadow-2xl ${sidebarIsOpened ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-5 border-b border-white/10 flex justify-between items-center">
-          <h2 className="text-sm font-bold tracking-wide text-white flex items-center gap-2">
-            <Wand2 size={16} className="text-blue-500" /> GENERATOR
-          </h2>
-          <button onClick={() => setActivePanel(null)} className="text-neutral-500 hover:text-white" data-testid="button-close-sidebar">
-            <PanelLeftClose size={16} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">{renderPanelContent()}</div>
-      </div>
-
-      {/* Main Workspace */}
-      <div 
-        className="flex flex-col flex-1 h-full relative transition-all duration-300" 
-        style={{ marginLeft: sidebarIsOpened ? '288px' : '0px' }} 
-        onMouseUp={handleMouseUp} 
-        onMouseMove={handleMouseMove}
-      >
-        {/* Top Bar */}
-        <div 
-          className="absolute top-6 z-[70] flex items-center gap-1 p-1.5 rounded-xl bg-[#1A1A1A]/70 border border-white/20 shadow-2xl backdrop-blur-xl no-print transition-all duration-300" 
-          style={fixedUIStyle}
-        >
-          <button onClick={onBack} className="p-2 hover:bg-white/20 rounded text-neutral-400 hover:text-white" title="Back" data-testid="button-back">
-            <ArrowLeft size={14} />
-          </button>
-          <div className="w-px h-4 bg-white/10 mx-2"></div>
-          <button onClick={() => setSoloToolMode('cursor')} className={`p-2 hover:bg-white/20 rounded ${toolMode === 'cursor' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white'}`} title="Select" data-testid="button-tool-cursor">
-            <MousePointer2 size={14} />
-          </button>
-          <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} className="p-2 hover:bg-white/20 rounded text-neutral-400 hover:text-white" data-testid="button-zoom-out">
-            <ZoomOut size={14} />
-          </button>
-          <span className="text-[10px] font-mono w-8 text-center text-neutral-400" data-testid="text-zoom-level">{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} className="p-2 hover:bg-white/20 rounded text-neutral-400 hover:text-white" data-testid="button-zoom-in">
-            <ZoomIn size={14} />
-          </button>
-          <div className="w-px h-4 bg-white/10 mx-2"></div>
-          <button onClick={() => togglePanel('ai')} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-md text-xs font-bold text-white shadow-lg shadow-blue-500/20 transition-all" data-testid="button-open-ai-panel">
-            <Sparkles size={14} /> Generate
-          </button>
-          <div className="w-px h-4 bg-white/10 mx-2"></div>
-          <div className="relative">
-            <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="flex items-center gap-2 px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold border border-white/10 transition-colors text-white" data-testid="button-export-menu">
-              <Download size={14} /> Export <ChevronDown size={10} />
+      {activePanel === 'generate' && (
+        <div className="w-72 bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <h2 className="text-sm font-bold text-white" data-testid="heading-generate">Generate UI</h2>
+            <button onClick={() => setActivePanel(null)} className="p-1 hover:bg-white/10 rounded" data-testid="button-close-panel">
+              <X size={16} className="text-neutral-400" />
             </button>
-            {exportMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-[#1A1A1A]/90 border border-white/20 rounded-lg shadow-xl z-50 overflow-hidden backdrop-blur-md">
-                <button onClick={() => handleExport('html', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-html">
-                  <FileCode size={14} className="text-blue-400" /> This Screen HTML
-                </button>
-                <button onClick={() => handleExport('html-all', null)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-html-all">
-                  <FileCode size={14} className="text-cyan-400" /> All Screens HTML
-                </button>
-                <button onClick={() => handleExport('pdf', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-pdf">
-                  <FileText size={14} className="text-red-400" /> Print PDF
-                </button>
-                <button onClick={() => handleExport('png', null)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-png">
-                  <FileImage size={14} className="text-purple-400" /> Save Image
-                </button>
-              </div>
-            )}
+          </div>
+          <div className="flex-1 p-4 space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-prompt">Design Prompt</label>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe the UI you want to create..."
+                className="w-full h-24 bg-[#252525] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50"
+                data-testid="input-prompt"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-platform">Platform</label>
+              <select value={platform} onChange={(e) => setPlatform(e.target.value as any)} className="w-full bg-[#252525] border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-blue-500/50" data-testid="select-platform">
+                <option value="mobile">Mobile (375x812)</option>
+                <option value="desktop">Desktop (1200x800)</option>
+                <option value="general">General (1200x600)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-count">Screens</label>
+              <input type="number" min="1" max="5" value={screenCount} onChange={(e) => setScreenCount(Math.max(1, Math.min(5, parseInt(e.target.value) || 1)))} className="w-full bg-[#252525] border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-blue-500/50" data-testid="input-screen-count" />
+            </div>
+          </div>
+          <div className="p-4 border-t border-white/10 space-y-2">
+            <button onClick={handleGenerate} disabled={isGenerating || !prompt} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2" data-testid="button-generate">
+              {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {isGenerating ? 'Generating...' : 'Generate'}
+            </button>
+            <button onClick={() => setActivePanel(null)} className="w-full bg-neutral-800/50 hover:bg-neutral-700/50 text-white text-sm font-semibold py-2 rounded-lg transition-colors" data-testid="button-cancel">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Editor */}
+      <div className="flex-1 flex flex-col">
+        {/* Top Bar */}
+        <div className="h-14 bg-[#1A1A1A] border-b border-white/10 flex items-center justify-between px-4 z-30">
+          <button onClick={onBack} className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/10 text-neutral-400 hover:text-white transition-colors" data-testid="button-back">
+            <ArrowLeft size={16} />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} title="Zoom Out" className="p-2 hover:bg-white/10 rounded text-neutral-400 hover:text-white" data-testid="button-zoom-out">
+              <ZoomOut size={16} />
+            </button>
+            <span className="text-xs font-medium text-neutral-400 w-12 text-center" data-testid="text-zoom">{Math.round(zoom * 100)}%</span>
+            <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} title="Zoom In" className="p-2 hover:bg-white/10 rounded text-neutral-400 hover:text-white" data-testid="button-zoom-in">
+              <ZoomIn size={16} />
+            </button>
+            <div className="h-6 w-px bg-white/10"></div>
+            <button onClick={() => setActivePanel('generate')} className="px-3 py-1.5 rounded bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-sm font-medium transition-colors flex items-center gap-2" data-testid="button-generate-panel">
+              <Sparkles size={14} />
+              Generate
+            </button>
+            <button onClick={() => setExportMenuOpen(!exportMenuOpen)} title="Export" className="p-2 relative hover:bg-white/10 rounded text-neutral-400 hover:text-white" data-testid="button-export">
+              <Download size={16} />
+              {exportMenuOpen && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-[#1A1A1A]/90 border border-white/20 rounded-lg shadow-xl z-50 overflow-hidden backdrop-blur-md">
+                  <button onClick={() => handleExport('html', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-html">
+                    <FileCode size={14} className="text-blue-400" /> This Screen HTML
+                  </button>
+                  <button onClick={() => handleExport('html-all', null)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-html-all">
+                    <FileCode size={14} className="text-cyan-400" /> All Screens HTML
+                  </button>
+                  <button onClick={() => handleExport('pdf', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-pdf">
+                    <FileText size={14} className="text-red-400" /> Print PDF
+                  </button>
+                  <button onClick={() => handleExport('png', null)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-png">
+                    <FileImage size={14} className="text-purple-400" /> Save Image
+                  </button>
+                </div>
+              )}
+            </button>
+            <button onClick={undo} disabled={history.length === 0} className="p-2 hover:bg-white/10 disabled:hover:bg-transparent rounded text-neutral-400 hover:text-white disabled:text-neutral-600" title="Undo" data-testid="button-undo">
+              <RotateCcw size={16} />
+            </button>
           </div>
         </div>
 
-        {/* Canvas */}
+        {/* Canvas Area */}
         <div 
           ref={canvasRef} 
           className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${isGenerating ? 'viewport-generating' : ''}`}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
+          onMouseDown={(e) => {
+            if (toolMode === 'cursor') {
+              const screenTarget = (e.target as HTMLElement).closest('.draggable-screen');
+              if (screenTarget) {
+                const idx = parseInt((screenTarget as HTMLElement).dataset.index || '0', 10);
+                handleDragStart(e, idx);
+              }
+            } else if (toolMode === 'hand' && !isPanning) {
+              setIsPanning(true);
+              setPanStart({ x: e.clientX, y: e.clientY });
+              setScrollStart({ left: canvasRef.current?.scrollLeft || 0, top: canvasRef.current?.scrollTop || 0 });
+            }
+          }}
+          onMouseMove={(e) => {
+            if (isPanning && canvasRef.current) {
+              canvasRef.current.scrollLeft = scrollStart.left - (e.clientX - panStart.x);
+              canvasRef.current.scrollTop = scrollStart.top - (e.clientY - panStart.y);
+            }
+          }}
+          onMouseUp={() => setIsPanning(false)}
           onWheel={(e) => { 
             if (e.ctrlKey || e.metaKey) { 
               e.preventDefault(); 
@@ -803,34 +654,15 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             ))}
           </div>
           
-          {/* Drawing Canvas - Replace SVG */}
-          <canvas 
-            ref={drawingCanvasRef}
-            id="drawing-layer"
-            style={{ 
-              position: 'absolute',
-              inset: 0, 
-              pointerEvents: isDrawingToolActive ? 'auto' : 'none', 
-              zIndex: 45,
-              cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : toolMode === 'text' ? 'text' : 'auto',
-              width: '100%',
-              height: '100%'
-            }}
-            onMouseDown={isDrawingToolActive ? handleMouseDown : undefined}
-            onMouseMove={isDrawingToolActive ? handleMouseMove : undefined}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          />
-          
           {/* Text boxes */}
           {textBoxes.map(textBox => (
             <div
               key={textBox.id}
               style={{
-                position: 'absolute',
+                position: 'fixed',
                 left: textBox.x,
                 top: textBox.y,
-                zIndex: 50
+                zIndex: 35
               }}
               className="bg-white text-black p-2 rounded border border-gray-300 shadow-md"
             >
@@ -847,205 +679,115 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           ))}
         </div>
 
-        {/* Drawing Layer Overlay */}
-        <div 
-          id="drawing-layer-overlay" 
-          className={`absolute inset-0 z-50 ${isDrawingToolActive ? 'pointer-events-auto' : 'pointer-events-none'}`}
-          style={{
-            cursor: toolMode === 'text' ? 'text' : toolMode === 'shapes' ? 'crosshair' : 'auto'
-          }}
-        />
+        {/* Bottom Toolbar */}
+        <div className="h-16 bg-[#1A1A1A] border-t border-white/10 flex items-center justify-center gap-2 px-4 z-30">
+          <button
+            onClick={() => setSoloToolMode('cursor')}
+            className={`p-2 rounded transition-colors ${toolMode === 'cursor' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+            title="Cursor"
+            data-testid="button-tool-cursor"
+          >
+            <MousePointer2 size={18} />
+          </button>
 
-        {/* Bottom Dock - Rewritten from scratch */}
-        <div 
-          className="absolute bottom-8 z-[100] p-3 rounded-2xl bg-[#1A1A1A]/90 border border-white/20 shadow-2xl backdrop-blur-xl flex items-center gap-3 transition-all no-print" 
-          style={fixedUIStyle}
-        >
-          {/* Navigation Tools */}
-          <div className="flex gap-1 items-center bg-[#2A2A2A] rounded-xl p-1">
-            <button 
-              data-testid="button-dock-cursor"
-              onClick={() => setToolMode('cursor')}
-              className={`p-2 rounded-lg transition-colors ${toolMode === 'cursor' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-              title="Select Tool"
-            >
-              <MousePointer2 size={18} />
-            </button>
-            <button 
-              data-testid="button-dock-hand"
-              onClick={() => setToolMode('hand')}
-              className={`p-2 rounded-lg transition-colors ${toolMode === 'hand' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-              title="Pan Tool"
-            >
-              <Hand size={18} />
-            </button>
-          </div>
+          <button
+            onClick={() => setSoloToolMode('hand')}
+            className={`p-2 rounded transition-colors ${toolMode === 'hand' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+            title="Hand / Pan"
+            data-testid="button-tool-hand"
+          >
+            <Hand size={18} />
+          </button>
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-white/10"></div>
+          <div className="h-6 w-px bg-white/10"></div>
 
-          {/* Canvas Tools */}
-          <div className="flex gap-1 items-center bg-[#2A2A2A] rounded-xl p-1">
-            <button 
-              data-testid="button-add-screen"
-              onClick={addScreen}
-              className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
-              title="Add Screen"
-            >
-              <LayoutTemplate size={18} />
-            </button>
-          </div>
+          <button
+            onClick={() => setSoloToolMode('pen')}
+            className={`p-2 rounded transition-colors ${toolMode === 'pen' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+            title="Pen"
+            data-testid="button-tool-pen"
+          >
+            <PenTool size={18} />
+          </button>
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-white/10"></div>
+          <button
+            onClick={() => setSoloToolMode('eraser')}
+            className={`p-2 rounded transition-colors ${toolMode === 'eraser' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+            title="Eraser"
+            data-testid="button-tool-eraser"
+          >
+            <Eraser size={18} />
+          </button>
 
-          {/* Drawing Tools */}
-          <div className="flex gap-1 items-center bg-[#2A2A2A] rounded-xl p-1">
-            {/* Pen Tool */}
-            <button 
-              data-testid="button-tool-pen"
-              onClick={() => { setToolMode('pen'); setShapeMode(null); }}
-              className={`p-2 rounded-lg transition-colors ${toolMode === 'pen' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-              title="Pen"
-            >
-              <PenTool size={18} />
-            </button>
-
-            {/* Eraser Tool */}
-            <button 
-              data-testid="button-tool-eraser"
-              onClick={() => { setToolMode('eraser'); setShapeMode(null); }}
-              className={`p-2 rounded-lg transition-colors ${toolMode === 'eraser' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-              title="Eraser"
-            >
-              <Eraser size={18} />
-            </button>
-
-            {/* Text Tool */}
-            <button 
-              data-testid="button-tool-text"
-              onClick={() => { setToolMode('text'); setShapeMode(null); }}
-              className={`p-2 rounded-lg transition-colors ${toolMode === 'text' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-              title="Text"
-            >
-              <Type size={18} />
-            </button>
-
-            {/* Shapes Tool */}
-            <div className="relative">
-              <button 
-                data-testid="button-tool-shapes"
-                onClick={() => setShowShapeMenu(!showShapeMenu)}
-                className={`p-2 rounded-lg transition-colors ${(toolMode === 'shapes') ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-                title="Shapes"
-              >
-                <Box size={18} />
-              </button>
-              
-              {/* Shapes Submenu */}
-              {showShapeMenu && (
-                <div className="absolute bottom-full mb-2 left-0 flex gap-1 bg-[#1A1A1A] p-2 rounded-lg border border-white/10 shadow-lg">
-                  <button 
-                    data-testid="button-shape-rect"
-                    onClick={() => { 
-                      setToolMode('shapes'); 
-                      setShapeMode('rect'); 
-                      setShowShapeMenu(false); 
-                    }}
-                    className="p-2 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Rectangle"
-                  >
-                    <Square size={14} />
-                  </button>
-                  <button 
-                    data-testid="button-shape-circle"
-                    onClick={() => { 
-                      setToolMode('shapes'); 
-                      setShapeMode('circle'); 
-                      setShowShapeMenu(false); 
-                    }}
-                    className="p-2 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Circle"
-                  >
-                    <Circle size={14} />
-                  </button>
-                  <button 
-                    data-testid="button-shape-triangle"
-                    onClick={() => { 
-                      setToolMode('shapes'); 
-                      setShapeMode('triangle'); 
-                      setShowShapeMenu(false); 
-                    }}
-                    className="p-2 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Triangle"
-                  >
-                    <Triangle size={14} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Undo Button */}
-            <button 
-              data-testid="button-undo"
-              onClick={undo}
-              disabled={history.length === 0}
-              className={`p-2 rounded-lg transition-colors ${history.length === 0 ? 'text-neutral-600 cursor-not-allowed' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-              title="Undo"
-            >
-              <RotateCcw size={18} />
-            </button>
-          </div>
-
-          {/* Stroke Size - Shows only when drawing tool active */}
-          {isDrawingToolActive && (
-            <>
-              <div className="w-px h-6 bg-white/10"></div>
-              <div className="flex items-center gap-2 bg-[#2A2A2A] rounded-xl px-2 py-1">
-                <MinusCircle size={14} className="text-neutral-400" />
-                <input 
-                  data-testid="input-stroke-size"
-                  type="range" 
-                  min="1" 
-                  max="20" 
-                  value={strokeSize}
-                  onChange={(e) => setStrokeSize(Number(e.target.value))}
-                  className="w-20 h-1 accent-blue-500 rounded-lg appearance-none cursor-pointer"
-                />
-                <PlusCircle size={14} className="text-neutral-400" />
+          <button
+            onClick={() => setSoloToolMode('shapes')}
+            className={`p-2 rounded transition-colors relative ${toolMode === 'shapes' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+            title="Shapes"
+            data-testid="button-tool-shapes"
+          >
+            <Box size={18} />
+            {toolMode === 'shapes' && (
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#1A1A1A] border border-white/20 rounded-lg shadow-lg p-1 flex gap-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShapeMode('rect'); }}
+                  className={`p-1.5 rounded ${shapeMode === 'rect' ? 'bg-blue-600/50' : 'hover:bg-white/10'}`}
+                  title="Rectangle"
+                  data-testid="button-shape-rect"
+                >
+                  <Square size={14} className="text-neutral-300" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShapeMode('circle'); }}
+                  className={`p-1.5 rounded ${shapeMode === 'circle' ? 'bg-blue-600/50' : 'hover:bg-white/10'}`}
+                  title="Circle"
+                  data-testid="button-shape-circle"
+                >
+                  <Circle size={14} className="text-neutral-300" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShapeMode('triangle'); }}
+                  className={`p-1.5 rounded ${shapeMode === 'triangle' ? 'bg-blue-600/50' : 'hover:bg-white/10'}`}
+                  title="Triangle"
+                  data-testid="button-shape-triangle"
+                >
+                  <Triangle size={14} className="text-neutral-300" />
+                </button>
               </div>
-            </>
-          )}
+            )}
+          </button>
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-white/10"></div>
+          <button
+            onClick={() => setSoloToolMode('text')}
+            className={`p-2 rounded transition-colors ${toolMode === 'text' ? 'bg-blue-600/30 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+            title="Text"
+            data-testid="button-tool-text"
+          >
+            <Type size={18} />
+          </button>
 
-          {/* Right Side Controls */}
-          <div className="flex gap-2 items-center">
-            {/* AI Panel Toggle */}
-            <button 
-              data-testid="button-dock-ai"
-              onClick={() => togglePanel('ai')}
-              className={`p-2 rounded-lg transition-colors ${activePanel === 'ai' ? 'bg-purple-600/30 text-purple-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
-              title="AI Generator"
-            >
-              <Sparkles size={18} />
-            </button>
+          <div className="h-6 w-px bg-white/10"></div>
 
-            {/* Color Picker */}
-            <div className="relative w-10 h-10 flex items-center justify-center">
-              <input 
-                data-testid="input-color-picker"
-                type="color" 
-                value={customColor}
-                onChange={(e) => setCustomColor(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full rounded-lg"
-              />
-              <div 
-                className="w-5 h-5 rounded-lg border-2 border-white/30 shadow-sm pointer-events-none"
-                style={{ backgroundColor: customColor }}
-              ></div>
-            </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={customColor}
+              onChange={(e) => setCustomColor(e.target.value)}
+              className="w-8 h-8 rounded cursor-pointer border border-white/20"
+              title="Color"
+              data-testid="input-color"
+            />
+            <div className="text-xs text-neutral-400">Stroke:</div>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={strokeSize}
+              onChange={(e) => setStrokeSize(parseInt(e.target.value))}
+              className="w-24"
+              title="Stroke Size"
+              data-testid="input-stroke-size"
+            />
+            <span className="text-xs text-neutral-400 w-6">{strokeSize}px</span>
           </div>
         </div>
       </div>
