@@ -858,81 +858,195 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           }}
         />
 
-        {/* Bottom Dock */}
-        <div className="absolute bottom-8 z-[100] p-2 rounded-2xl bg-[#1A1A1A]/70 border border-white/20 shadow-2xl backdrop-blur-xl flex items-center gap-2 transition-all no-print" style={fixedUIStyle}>
-          <div className="flex gap-1">
-            <button onClick={() => setSoloToolMode('cursor')} className={`p-2.5 rounded-xl ${toolMode === 'cursor' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Select" data-testid="button-dock-cursor">
+        {/* Bottom Dock - Rewritten from scratch */}
+        <div 
+          className="absolute bottom-8 z-[100] p-3 rounded-2xl bg-[#1A1A1A]/90 border border-white/20 shadow-2xl backdrop-blur-xl flex items-center gap-3 transition-all no-print" 
+          style={fixedUIStyle}
+        >
+          {/* Navigation Tools */}
+          <div className="flex gap-1 items-center bg-[#2A2A2A] rounded-xl p-1">
+            <button 
+              data-testid="button-dock-cursor"
+              onClick={() => setToolMode('cursor')}
+              className={`p-2 rounded-lg transition-colors ${toolMode === 'cursor' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+              title="Select Tool"
+            >
               <MousePointer2 size={18} />
             </button>
-            <button onClick={() => setSoloToolMode('hand')} className={`p-2.5 rounded-xl ${toolMode === 'hand' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Pan" data-testid="button-dock-hand">
+            <button 
+              data-testid="button-dock-hand"
+              onClick={() => setToolMode('hand')}
+              className={`p-2 rounded-lg transition-colors ${toolMode === 'hand' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+              title="Pan Tool"
+            >
               <Hand size={18} />
             </button>
           </div>
-          <div className="w-px h-6 bg-white/10 mx-1"></div>
-          <div className="flex gap-1">
-            <button onClick={addScreen} className="p-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/20" title="Add Frame" data-testid="button-add-screen">
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10"></div>
+
+          {/* Canvas Tools */}
+          <div className="flex gap-1 items-center bg-[#2A2A2A] rounded-xl p-1">
+            <button 
+              data-testid="button-add-screen"
+              onClick={addScreen}
+              className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+              title="Add Screen"
+            >
               <LayoutTemplate size={18} />
             </button>
-            <button onClick={() => setSoloToolMode('pen')} className={`p-2.5 rounded-xl ${toolMode === 'pen' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Pen" data-testid="button-tool-pen">
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10"></div>
+
+          {/* Drawing Tools */}
+          <div className="flex gap-1 items-center bg-[#2A2A2A] rounded-xl p-1">
+            {/* Pen Tool */}
+            <button 
+              data-testid="button-tool-pen"
+              onClick={() => { setToolMode('pen'); setShapeMode(null); }}
+              className={`p-2 rounded-lg transition-colors ${toolMode === 'pen' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+              title="Pen"
+            >
               <PenTool size={18} />
             </button>
-            <button onClick={() => setSoloToolMode('eraser')} className={`p-2.5 rounded-xl ${toolMode === 'eraser' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Eraser" data-testid="button-tool-eraser">
+
+            {/* Eraser Tool */}
+            <button 
+              data-testid="button-tool-eraser"
+              onClick={() => { setToolMode('eraser'); setShapeMode(null); }}
+              className={`p-2 rounded-lg transition-colors ${toolMode === 'eraser' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+              title="Eraser"
+            >
               <Eraser size={18} />
             </button>
-            <button onClick={() => setSoloToolMode('text')} className={`p-2.5 rounded-xl ${toolMode === 'text' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Text" data-testid="button-tool-text">
+
+            {/* Text Tool */}
+            <button 
+              data-testid="button-tool-text"
+              onClick={() => { setToolMode('text'); setShapeMode(null); }}
+              className={`p-2 rounded-lg transition-colors ${toolMode === 'text' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+              title="Text"
+            >
               <Type size={18} />
             </button>
+
+            {/* Shapes Tool */}
             <div className="relative">
-              <button onClick={() => setShowShapeMenu(!showShapeMenu)} className={`p-2.5 rounded-xl ${toolMode === 'shapes' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Shapes" data-testid="button-tool-shapes">
+              <button 
+                data-testid="button-tool-shapes"
+                onClick={() => setShowShapeMenu(!showShapeMenu)}
+                className={`p-2 rounded-lg transition-colors ${(toolMode === 'shapes') ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                title="Shapes"
+              >
                 <Box size={18} />
               </button>
+              
+              {/* Shapes Submenu */}
               {showShapeMenu && (
-                <div className="absolute bottom-full mb-2 left-0 flex gap-1 bg-[#1A1A1A] p-2 rounded-lg border border-white/10">
-                  <button onClick={() => { setToolMode('shapes'); setShapeMode('rect'); setShowShapeMenu(false); }} className="p-2 rounded hover:bg-white/20" title="Rectangle" data-testid="button-shape-rect">
+                <div className="absolute bottom-full mb-2 left-0 flex gap-1 bg-[#1A1A1A] p-2 rounded-lg border border-white/10 shadow-lg">
+                  <button 
+                    data-testid="button-shape-rect"
+                    onClick={() => { 
+                      setToolMode('shapes'); 
+                      setShapeMode('rect'); 
+                      setShowShapeMenu(false); 
+                    }}
+                    className="p-2 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                    title="Rectangle"
+                  >
                     <Square size={14} />
                   </button>
-                  <button onClick={() => { setToolMode('shapes'); setShapeMode('circle'); setShowShapeMenu(false); }} className="p-2 rounded hover:bg-white/20" title="Circle" data-testid="button-shape-circle">
+                  <button 
+                    data-testid="button-shape-circle"
+                    onClick={() => { 
+                      setToolMode('shapes'); 
+                      setShapeMode('circle'); 
+                      setShowShapeMenu(false); 
+                    }}
+                    className="p-2 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                    title="Circle"
+                  >
                     <Circle size={14} />
                   </button>
-                  <button onClick={() => { setToolMode('shapes'); setShapeMode('triangle'); setShowShapeMenu(false); }} className="p-2 rounded hover:bg-white/20" title="Triangle" data-testid="button-shape-triangle">
+                  <button 
+                    data-testid="button-shape-triangle"
+                    onClick={() => { 
+                      setToolMode('shapes'); 
+                      setShapeMode('triangle'); 
+                      setShowShapeMenu(false); 
+                    }}
+                    className="p-2 rounded text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
+                    title="Triangle"
+                  >
                     <Triangle size={14} />
                   </button>
                 </div>
               )}
             </div>
-            {isDrawingToolActive && (
-              <div className="flex items-center gap-2 bg-[#1A1A1A] p-2 rounded-xl border border-white/10">
-                <MinusCircle size={14} className="text-neutral-400" />
-                <input 
-                  type="range" 
-                  min="1" 
-                  max="20" 
-                  value={strokeSize} 
-                  onChange={e => setStrokeSize(Number(e.target.value))} 
-                  className="w-16 h-1 accent-blue-500 rounded-lg appearance-none"
-                  data-testid="input-stroke-size"
-                />
-                <PlusCircle size={14} className="text-neutral-400" />
-              </div>
-            )}
-            <button onClick={undo} disabled={history.length === 0} className={`p-2.5 rounded-xl ${history.length === 0 ? 'text-neutral-700' : 'text-neutral-400 hover:text-white hover:bg-white/20'}`} title="Undo" data-testid="button-undo">
+
+            {/* Undo Button */}
+            <button 
+              data-testid="button-undo"
+              onClick={undo}
+              disabled={history.length === 0}
+              className={`p-2 rounded-lg transition-colors ${history.length === 0 ? 'text-neutral-600 cursor-not-allowed' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+              title="Undo"
+            >
               <RotateCcw size={18} />
             </button>
           </div>
-          <div className="w-px h-6 bg-white/10 mx-1"></div>
-          <div className="flex gap-1 items-center">
-            <button onClick={() => togglePanel('ai')} className={`p-2.5 rounded-xl ${activePanel === 'ai' ? 'text-purple-400 bg-purple-500/20' : 'text-neutral-400 hover:text-white'}`} title="AI Generator" data-testid="button-dock-ai">
+
+          {/* Stroke Size - Shows only when drawing tool active */}
+          {isDrawingToolActive && (
+            <>
+              <div className="w-px h-6 bg-white/10"></div>
+              <div className="flex items-center gap-2 bg-[#2A2A2A] rounded-xl px-2 py-1">
+                <MinusCircle size={14} className="text-neutral-400" />
+                <input 
+                  data-testid="input-stroke-size"
+                  type="range" 
+                  min="1" 
+                  max="20" 
+                  value={strokeSize}
+                  onChange={(e) => setStrokeSize(Number(e.target.value))}
+                  className="w-20 h-1 accent-blue-500 rounded-lg appearance-none cursor-pointer"
+                />
+                <PlusCircle size={14} className="text-neutral-400" />
+              </div>
+            </>
+          )}
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10"></div>
+
+          {/* Right Side Controls */}
+          <div className="flex gap-2 items-center">
+            {/* AI Panel Toggle */}
+            <button 
+              data-testid="button-dock-ai"
+              onClick={() => togglePanel('ai')}
+              className={`p-2 rounded-lg transition-colors ${activePanel === 'ai' ? 'bg-purple-600/30 text-purple-400' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+              title="AI Generator"
+            >
               <Sparkles size={18} />
             </button>
-            <div className="relative w-8 h-8 flex items-center justify-center">
+
+            {/* Color Picker */}
+            <div className="relative w-10 h-10 flex items-center justify-center">
               <input 
-                type="color" 
-                value={customColor} 
-                onChange={e => setCustomColor(e.target.value)} 
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
                 data-testid="input-color-picker"
+                type="color" 
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full rounded-lg"
               />
-              <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: customColor }}></div>
+              <div 
+                className="w-5 h-5 rounded-lg border-2 border-white/30 shadow-sm pointer-events-none"
+                style={{ backgroundColor: customColor }}
+              ></div>
             </div>
           </div>
         </div>
