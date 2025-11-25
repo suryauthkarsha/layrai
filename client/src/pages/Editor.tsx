@@ -202,8 +202,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     setActiveScreenIndex(0);
 
     try {
-      const apiKey = import.meta.env.GEMINI_API_KEY || '';
-      const extractedHtml = await generateUI(prompt, screenCount, platform, apiKey);
+      const extractedHtml = await generateUI(prompt, screenCount, platform);
       
       setGenerationProgress(70);
 
@@ -507,7 +506,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   strokeLinecap="round" 
                   strokeLinejoin="round" 
                   style={{ 
-                    mixBlendMode: d.isEraser ? 'destination-out' : 'normal', 
+                    mixBlendMode: d.isEraser ? ('destination-out' as any) : 'normal', 
                     opacity: 1, 
                     stroke: d.isEraser ? 'transparent' : d.color 
                   }} 
