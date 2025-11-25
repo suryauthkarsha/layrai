@@ -1,5 +1,3 @@
-import { Sparkles, Layout, MoveVertical, TrendingUp } from 'lucide-react';
-
 // Hero image and background
 export const HERO_IMAGE_URL = "https://i.ibb.co/TB7TwKbS/Gemini-Generated-Image_fqobwbfqobwbfqob.png";
 export const HERO_BACKGROUND_GRADIENT = "linear-gradient(135deg, #2c3e50, #3498db, #8e44ad)";
@@ -49,14 +47,6 @@ export const PRESET_THEMES = {
     gradient: "from-rose-600 to-pink-600" 
   },
 };
-
-// Component options for manual addition
-export const COMPONENT_OPTIONS = [
-  { id: 'hero', label: 'Hero', icon: <Sparkles size={12} /> },
-  { id: 'grid', label: 'Grid', icon: <Layout size={12} /> },
-  { id: 'carousel', label: 'Carousel', icon: <MoveVertical size={12} className="rotate-90" /> },
-  { id: 'stats', label: 'Stats', icon: <TrendingUp size={12} /> },
-];
 
 // Platform dimensions
 export const PLATFORM_DIMENSIONS = {
