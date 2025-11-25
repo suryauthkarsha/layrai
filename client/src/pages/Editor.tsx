@@ -50,7 +50,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [textBoxes, setTextBoxes] = useState<Array<{ id: string; x: number; y: number; text: string }>>([]);
   const [shapes, setShapes] = useState<Array<{ id: string; type: 'rect' | 'circle' | 'triangle'; x: number; y: number; width: number; height: number; color: string }>>([]);
   const [shapePreview, setShapePreview] = useState<{ x: number; y: number } | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState(384);
+  const [sidebarWidth, setSidebarWidth] = useState(500);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -100,7 +100,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingSidebar) return;
       // Calculate width from left edge (0) to current mouse position
-      const newWidth = Math.max(250, Math.min(600, Math.max(0, e.clientX)));
+      const newWidth = Math.max(350, Math.min(800, Math.max(0, e.clientX)));
       setSidebarWidth(newWidth);
     };
 
@@ -529,15 +529,15 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           className="bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col relative group"
           style={{ width: sidebarWidth + 'px', transition: isResizingSidebar ? 'none' : 'width 0.2s' }}
         >
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h2 className="text-xs font-bold text-white" data-testid="heading-generate">Generate UI</h2>
+          <div className="flex items-center justify-between p-6 border-b border-white/10">
+            <h2 className="text-lg font-bold text-white" data-testid="heading-generate">Generate UI</h2>
             <button onClick={() => setActivePanel(null)} className="p-1 hover:bg-white/10 rounded" data-testid="button-close-panel">
-              <X size={14} className="text-neutral-400" />
+              <X size={18} className="text-neutral-400" />
             </button>
           </div>
-          <div className="flex-1 p-4 space-y-3">
+          <div className="flex-1 p-6 space-y-4">
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-prompt">Design Prompt</label>
+              <label className="text-sm font-semibold text-neutral-300 block mb-3" data-testid="label-prompt">Design Prompt</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -547,47 +547,47 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   }
                 }}
                 placeholder="Describe the UI you want... (spaces work fine)"
-                className="w-full h-24 bg-[#252525] border-2 border-blue-500/50 rounded-lg p-3 text-sm text-white placeholder-neutral-400 focus:outline-none focus:border-blue-400 focus:shadow-[0_0_20px_rgba(59,130,246,0.6)] resize-none transition-all"
+                className="w-full h-32 bg-[#252525] border-2 border-blue-500/60 rounded-lg p-4 text-base text-white placeholder-neutral-400 focus:outline-none focus:border-blue-300 focus:shadow-[0_0_30px_rgba(59,130,246,1)] resize-none transition-all"
                 data-testid="input-prompt"
                 spellCheck="false"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-platform">Platform</label>
-              <div className="grid grid-cols-3 gap-1.5">
-                <button onClick={() => setPlatform('mobile')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'mobile' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-mobile">
-                  <div className="text-xs font-semibold">iPhone 13 Pro</div>
-                  <div className="text-[10px] text-neutral-400">430x932</div>
+              <label className="text-sm font-semibold text-neutral-300 block mb-3" data-testid="label-platform">Platform</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={() => setPlatform('mobile')} className={`p-3 rounded-lg border-2 transition-all text-center ${platform === 'mobile' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-mobile">
+                  <div className="text-sm font-semibold">iPhone 13 Pro</div>
+                  <div className="text-xs text-neutral-400">430x932</div>
                 </button>
-                <button onClick={() => setPlatform('desktop')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'desktop' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-desktop">
-                  <div className="text-xs font-semibold">MacBook Air 15"</div>
-                  <div className="text-[10px] text-neutral-400">1728x1117</div>
+                <button onClick={() => setPlatform('desktop')} className={`p-3 rounded-lg border-2 transition-all text-center ${platform === 'desktop' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-desktop">
+                  <div className="text-sm font-semibold">MacBook Air 15"</div>
+                  <div className="text-xs text-neutral-400">1728x1117</div>
                 </button>
-                <button onClick={() => setPlatform('general')} className={`p-2 rounded-lg border-2 transition-all text-center ${platform === 'general' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-general">
-                  <div className="text-xs font-semibold">General</div>
-                  <div className="text-[10px] text-neutral-400">1200x800</div>
+                <button onClick={() => setPlatform('general')} className={`p-3 rounded-lg border-2 transition-all text-center ${platform === 'general' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-general">
+                  <div className="text-sm font-semibold">General</div>
+                  <div className="text-xs text-neutral-400">1200x800</div>
                 </button>
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-count">Screens</label>
-              <div className="flex items-center justify-center gap-3">
-                <button onClick={() => setScreenCount(Math.max(1, screenCount - 1))} className="p-1.5 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-minus">
-                  <MinusCircle size={16} />
+              <label className="text-sm font-semibold text-neutral-300 block mb-3" data-testid="label-count">Screens</label>
+              <div className="flex items-center justify-center gap-4">
+                <button onClick={() => setScreenCount(Math.max(1, screenCount - 1))} className="p-2 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-minus">
+                  <MinusCircle size={20} />
                 </button>
-                <span className="text-lg font-semibold text-white w-8 text-center" data-testid="text-screen-count">{screenCount}</span>
-                <button onClick={() => setScreenCount(Math.min(5, screenCount + 1))} className="p-1.5 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-plus">
-                  <PlusCircle size={16} />
+                <span className="text-2xl font-bold text-white w-12 text-center" data-testid="text-screen-count">{screenCount}</span>
+                <button onClick={() => setScreenCount(Math.min(5, screenCount + 1))} className="p-2 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-plus">
+                  <PlusCircle size={20} />
                 </button>
               </div>
             </div>
           </div>
-          <div className="p-4 border-t border-white/10 space-y-2">
-            <button onClick={handleGenerate} disabled={isGenerating || !prompt} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2" data-testid="button-generate">
-              {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+          <div className="p-6 border-t border-white/10 space-y-3">
+            <button onClick={handleGenerate} disabled={isGenerating || !prompt} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-sm font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2" data-testid="button-generate">
+              {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
               {isGenerating ? 'Generating...' : 'Generate'}
             </button>
-            <button onClick={() => setActivePanel(null)} className="w-full bg-neutral-800/50 hover:bg-neutral-700/50 text-white text-xs font-semibold py-1.5 rounded-lg transition-colors" data-testid="button-cancel">Cancel</button>
+            <button onClick={() => setActivePanel(null)} className="w-full bg-neutral-800/50 hover:bg-neutral-700/50 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors" data-testid="button-cancel">Cancel</button>
           </div>
           {/* Resize Handle */}
           <div
