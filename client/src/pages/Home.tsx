@@ -25,7 +25,7 @@ export default function Home({ projects, onCreate, onDelete, onOpen }: HomeProps
       <div className="w-full z-10">
         
         {/* Hero Section with Image */}
-        <div className="relative w-full h-[600px] overflow-hidden">
+        <div className="relative w-full h-[500px] overflow-hidden">
           
           {/* Background Image - No Gradient */}
           <div 
@@ -40,9 +40,6 @@ export default function Home({ projects, onCreate, onDelete, onOpen }: HomeProps
           
           {/* Top Dark Gradient Overlay */}
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-10"></div>
-          
-          {/* Bottom Dark Gradient Overlay */}
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10"></div>
 
           {/* Logo and Nav - Top */}
           <div className="absolute top-8 left-0 right-0 flex justify-between items-center px-10 z-20">
@@ -58,23 +55,23 @@ export default function Home({ projects, onCreate, onDelete, onOpen }: HomeProps
               <Plus size={16} /> New Project
             </button>
           </div>
+        </div>
 
-          {/* Content - Bottom Center */}
-          <div className="absolute bottom-0 left-0 right-0 p-10 text-center z-20">
-            <h2 className="text-5xl font-extrabold tracking-tighter text-white mb-4 leading-tight" data-testid="text-hero-title">
-              AI-Powered UI Generation.
-            </h2>
-            <p className="text-lg text-neutral-300 max-w-3xl mx-auto mb-6" data-testid="text-hero-subtitle">
-              Instantly generate, inspect, and export high-fidelity designs for any platform using clean Tailwind CSS code.
-            </p>
-            <button 
-              onClick={onCreate} 
-              className="px-8 py-3 bg-white text-black rounded-full text-md font-bold shadow-xl hover:shadow-blue-500/50 transform hover:scale-[1.02] duration-300 transition-all"
-              data-testid="button-hero-cta"
-            >
-              Start New Creation
-            </button>
-          </div>
+        {/* Content - Below Image */}
+        <div className="w-full bg-[#0a0a0a] p-10 text-center border-b border-white/5">
+          <h2 className="text-5xl font-extrabold tracking-tighter text-white mb-4 leading-tight" data-testid="text-hero-title">
+            AI-Powered UI Generation.
+          </h2>
+          <p className="text-lg text-neutral-400 max-w-3xl mx-auto mb-6" data-testid="text-hero-subtitle">
+            Instantly generate, inspect, and export high-fidelity designs for any platform using clean Tailwind CSS code.
+          </p>
+          <button 
+            onClick={onCreate} 
+            className="px-8 py-3 bg-white text-black rounded-full text-md font-bold shadow-xl hover:shadow-blue-500/50 transform hover:scale-[1.02] duration-300 transition-all"
+            data-testid="button-hero-cta"
+          >
+            Start New Creation
+          </button>
         </div>
       </div>
 
