@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { GoogleGenAI } from "@google/genai";
 import { storage } from "./storage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -24,33 +25,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const systemPrompt = getSystemPrompt(screenCount || 1, platform || 'mobile', []);
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `${systemPrompt}\n\nUSER REQUEST: "${prompt}"`
-              }]
-            }]
-          })
-        }
-      );
+      const ai = new GoogleGenAI({ apiKey });
+      const geminiResponse = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{
+          parts: [{
+            text: `${systemPrompt}\n\nUSER REQUEST: "${prompt}"`
+          }]
+        }]
+      });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API error:', response.status, errorText);
-        return res.status(response.status).json({ error: `Gemini API error: ${response.status}` });
-      }
-
-      const data = await response.json();
-      if (!data.candidates || !data.candidates.length) {
+      if (!geminiResponse?.candidates?.[0]?.content?.parts?.[0]?.text) {
         return res.status(500).json({ error: "No content generated" });
       }
 
-      const text = data.candidates[0].content.parts[0].text;
+      const text = geminiResponse.candidates[0].content.parts[0].text;
 
       // Extract HTML code blocks
       const htmlBlockRegex = /```html\n([\s\S]*?)```/g;
