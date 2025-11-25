@@ -371,17 +371,24 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     const skeletonHeight = getFixedScreenHeight();
     const skeletonHtml = `<div class="w-full h-full bg-neutral-950 flex flex-col items-center justify-center text-neutral-600 font-mono animate-pulse p-8"><div class="w-16 h-16 bg-neutral-800 rounded-full mb-6"></div><div class="w-3/4 h-4 bg-neutral-800 rounded mb-3"></div><div class="w-1/2 h-4 bg-neutral-800 rounded"></div></div>`;
     
-    const newScreenPosition = generatedScreens.length > 0
-      ? { x: (generatedScreens[0].x || 0) + getFrameWidth() + 100, y: generatedScreens[0].y || 0 }
-      : { x: 0, y: 0 };
+    // Center screens in the visible canvas
+    const frameWidth = getFrameWidth();
+    const frameHeight = getFixedScreenHeight();
+    
+    // Calculate center position based on viewport size
+    const viewportWidth = canvasRef.current?.clientWidth || 1000;
+    const viewportHeight = canvasRef.current?.clientHeight || 800;
+    
+    const centerX = Math.max(300, viewportWidth / 2 / zoom - frameWidth / 2);
+    const centerY = Math.max(300, viewportHeight / 2 / zoom - frameHeight / 2);
 
     const newScreens: Screen[] = Array.from({ length: screenCount }).map((_, i) => ({
       name: `Screen ${i + 1}`,
       rawHtml: skeletonHtml,
       type: 'html',
       height: skeletonHeight,
-      x: newScreenPosition.x + i * (getFrameWidth() + 50),
-      y: newScreenPosition.y
+      x: centerX + i * (frameWidth + 100),
+      y: centerY
     }));
 
     if (generatedScreens.length > 0) saveStateToHistory(generatedScreens);
