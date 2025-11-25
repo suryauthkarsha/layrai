@@ -526,7 +526,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       {/* Sidebar */}
       {activePanel === 'generate' && (
         <div 
-          className={`bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col relative group ${isGenerating ? 'shadow-2xl shadow-blue-500/40' : ''}`}
+          className={`bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col relative group flex-shrink-0 ${isGenerating ? 'shadow-2xl shadow-blue-500/40' : ''}`}
           style={{ width: sidebarWidth + 'px', transition: isResizingSidebar ? 'none' : 'width 0.2s' }}
         >
           <div className="flex items-center justify-between p-6 border-b border-white/10">
