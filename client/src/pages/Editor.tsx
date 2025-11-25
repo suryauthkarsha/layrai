@@ -97,9 +97,11 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   }, [toolMode, isPanning, zoom]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser') && drawingCanvasRef.current) {
-      const canvas = drawingCanvasRef.current;
-      const rect = canvas.getBoundingClientRect();
+    if (isDrawing && (toolMode === 'pen' || toolMode === 'eraser')) {
+      const drawingLayer = document.getElementById('drawing-layer') as SVGElement;
+      if (!drawingLayer) return;
+      
+      const rect = drawingLayer.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       
@@ -319,11 +321,12 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     const drawingColor = toolMode === 'eraser' ? 'transparent' : customColor;
     
     if (toolMode === 'pen' || toolMode === 'eraser') {
-      if (!drawingCanvasRef.current) return;
       setIsDrawing(true);
       
-      const canvas = drawingCanvasRef.current;
-      const rect = canvas.getBoundingClientRect();
+      const drawingLayer = document.getElementById('drawing-layer') as SVGElement;
+      if (!drawingLayer) return;
+      
+      const rect = drawingLayer.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       
@@ -555,55 +558,6 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               gap: '200px' 
             }}
           >
-            <canvas 
-              ref={drawingCanvasRef}
-              id="drawing-layer" 
-              className="canvas-drawing absolute inset-0 z-40"
-              style={{ 
-                pointerEvents: isDrawingToolActive ? 'auto' : 'none',
-                left: 0,
-                top: 0,
-                position: 'absolute',
-                width: '100%',
-                height: '100%',
-                cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : 'default'
-              }}
-              onMouseDown={isDrawingToolActive ? handleMouseDown : undefined}
-              onMouseMove={isDrawingToolActive ? handleMouseMove : undefined}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-            />
-            {/* Canvas drawing effect */}
-            {isDrawingToolActive && (
-              <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 40, width: '100%', height: '100%' }}>
-                {drawings.map((d, i) => 
-                  d.isEraser ? (
-                    <circle 
-                      key={i}
-                      cx={d.points[d.points.length - 1]?.x || 0}
-                      cy={d.points[d.points.length - 1]?.y || 0}
-                      r={d.strokeWidth / 2}
-                      fill="rgba(255, 255, 255, 0.1)"
-                      stroke="rgba(255, 255, 255, 0.3)"
-                      strokeWidth="1"
-                      opacity={0.6}
-                    />
-                  ) : (
-                    <path 
-                      key={i} 
-                      d={`M ${d.points.map(p => `${p.x} ${p.y}`).join(' L ')}`} 
-                      stroke={d.color} 
-                      strokeWidth={d.strokeWidth} 
-                      fill="none" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                      opacity={0.9}
-                    />
-                  )
-                )}
-              </svg>
-            )}
-            
             {/* Initial placeholder */}
             {generatedScreens.length === 0 && !isGenerating && (
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
@@ -652,6 +606,50 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               </div>
             ))}
           </div>
+          
+          {/* Drawing layer - outside scaled container */}
+          <svg 
+            id="drawing-layer"
+            style={{ 
+              position: 'absolute',
+              inset: 0, 
+              pointerEvents: isDrawingToolActive ? 'auto' : 'none', 
+              zIndex: 45,
+              cursor: toolMode === 'pen' ? 'crosshair' : toolMode === 'eraser' ? 'grab' : 'auto',
+              width: '100%',
+              height: '100%'
+            }}
+            onMouseDown={isDrawingToolActive ? handleMouseDown : undefined}
+            onMouseMove={isDrawingToolActive ? handleMouseMove : undefined}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            {drawings.map((d, i) => 
+              d.isEraser ? (
+                <circle 
+                  key={i}
+                  cx={d.points[d.points.length - 1]?.x || 0}
+                  cy={d.points[d.points.length - 1]?.y || 0}
+                  r={d.strokeWidth / 2}
+                  fill="rgba(255, 255, 255, 0.1)"
+                  stroke="rgba(255, 255, 255, 0.3)"
+                  strokeWidth="1"
+                  opacity={0.6}
+                />
+              ) : (
+                <path 
+                  key={i} 
+                  d={`M ${d.points.map(p => `${p.x} ${p.y}`).join(' L ')}`} 
+                  stroke={d.color} 
+                  strokeWidth={d.strokeWidth} 
+                  fill="none" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  opacity={0.9}
+                />
+              )
+            )}
+          </svg>
         </div>
 
         {/* Drawing Layer Overlay */}
