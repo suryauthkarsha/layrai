@@ -497,30 +497,30 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
       {/* Main Editor */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <div className="h-14 bg-[#1A1A1A] border-b border-white/10 flex items-center justify-between px-4 z-30">
-          <button onClick={onBack} className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/10 text-neutral-400 hover:text-white transition-colors" data-testid="button-back">
+        {/* Top Bar - Floating Glass */}
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 backdrop-blur-xl bg-[#1A1A1A]/60 border border-white/10 rounded-2xl shadow-2xl px-6 py-3 flex items-center justify-between gap-6">
+          <button onClick={onBack} className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors" data-testid="button-back">
             <ArrowLeft size={16} />
             <span className="text-sm font-medium">Back</span>
           </button>
 
-          <div className="flex items-center gap-2">
-            <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} title="Zoom Out" className="p-2 hover:bg-white/10 rounded text-neutral-400 hover:text-white" data-testid="button-zoom-out">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} title="Zoom Out" className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white" data-testid="button-zoom-out">
               <ZoomOut size={16} />
             </button>
             <span className="text-xs font-medium text-neutral-400 w-12 text-center" data-testid="text-zoom">{Math.round(zoom * 100)}%</span>
-            <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} title="Zoom In" className="p-2 hover:bg-white/10 rounded text-neutral-400 hover:text-white" data-testid="button-zoom-in">
+            <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} title="Zoom In" className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white" data-testid="button-zoom-in">
               <ZoomIn size={16} />
             </button>
-            <div className="h-6 w-px bg-white/10"></div>
-            <button onClick={() => setActivePanel('generate')} className="px-3 py-1.5 rounded bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-sm font-medium transition-colors flex items-center gap-2" data-testid="button-generate-panel">
+            <div className="h-5 w-px bg-white/10"></div>
+            <button onClick={() => setActivePanel('generate')} className="px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/40 text-blue-400 text-sm font-medium transition-colors flex items-center gap-2" data-testid="button-generate-panel">
               <Sparkles size={14} />
               Generate
             </button>
-            <button onClick={() => setExportMenuOpen(!exportMenuOpen)} title="Export" className="p-2 relative hover:bg-white/10 rounded text-neutral-400 hover:text-white" data-testid="button-export">
+            <button onClick={() => setExportMenuOpen(!exportMenuOpen)} title="Export" className="p-2 relative hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white" data-testid="button-export">
               <Download size={16} />
               {exportMenuOpen && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-[#1A1A1A]/90 border border-white/20 rounded-lg shadow-xl z-50 overflow-hidden backdrop-blur-md">
+                <div className="absolute top-full right-0 mt-2 w-48 bg-[#1A1A1A]/70 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl z-50 overflow-hidden">
                   <button onClick={() => handleExport('html', activeScreenIndex)} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs text-left hover:bg-white/10 text-white" data-testid="button-export-html">
                     <FileCode size={14} className="text-blue-400" /> This Screen HTML
                   </button>
@@ -536,11 +536,14 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                 </div>
               )}
             </button>
-            <button onClick={undo} disabled={history.length === 0} className="p-2 hover:bg-white/10 disabled:hover:bg-transparent rounded text-neutral-400 hover:text-white disabled:text-neutral-600" title="Undo" data-testid="button-undo">
+            <button onClick={undo} disabled={history.length === 0} className="p-2 hover:bg-white/10 disabled:hover:bg-transparent rounded-lg text-neutral-400 hover:text-white disabled:text-neutral-600" title="Undo" data-testid="button-undo">
               <RotateCcw size={16} />
             </button>
           </div>
         </div>
+        
+        {/* Spacer for floating top bar */}
+        <div className="h-0"></div>
 
         {/* Canvas Area */}
         <div 
@@ -679,13 +682,13 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           ))}
         </div>
 
-        {/* Bottom Toolbar */}
-        <div className="h-20 bg-[#1A1A1A] border-t border-white/10 flex items-center justify-center gap-6 px-6 z-30">
+        {/* Bottom Toolbar - Floating Glass */}
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 backdrop-blur-xl bg-[#1A1A1A]/60 border border-white/10 rounded-2xl shadow-2xl px-6 py-3 flex items-center justify-center gap-4">
           {/* Navigation Tools */}
-          <div className="flex items-center gap-2 bg-[#252525] p-1.5 rounded-lg border border-white/5">
+          <div className="flex items-center gap-2 bg-[#252525]/60 p-1.5 rounded-lg border border-white/5">
             <button
               onClick={() => setSoloToolMode('cursor')}
-              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'cursor' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all ${toolMode === 'cursor' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
               title="Cursor"
               data-testid="button-tool-cursor"
             >
@@ -693,7 +696,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             </button>
             <button
               onClick={() => setSoloToolMode('hand')}
-              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'hand' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all ${toolMode === 'hand' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
               title="Hand / Pan"
               data-testid="button-tool-hand"
             >
@@ -702,10 +705,10 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           </div>
 
           {/* Drawing Tools */}
-          <div className="flex items-center gap-2 bg-[#252525] p-1.5 rounded-lg border border-white/5">
+          <div className="flex items-center gap-2 bg-[#252525]/60 p-1.5 rounded-lg border border-white/5">
             <button
               onClick={() => setSoloToolMode('pen')}
-              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'pen' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all ${toolMode === 'pen' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
               title="Pen"
               data-testid="button-tool-pen"
             >
@@ -713,7 +716,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             </button>
             <button
               onClick={() => setSoloToolMode('eraser')}
-              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'eraser' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all ${toolMode === 'eraser' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
               title="Eraser"
               data-testid="button-tool-eraser"
             >
@@ -722,16 +725,16 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             <div className="h-5 w-px bg-white/10"></div>
             <button
               onClick={() => setSoloToolMode('shapes')}
-              className={`px-2.5 py-1.5 rounded transition-all relative ${toolMode === 'shapes' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all relative ${toolMode === 'shapes' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
               title="Shapes"
               data-testid="button-tool-shapes"
             >
               <Box size={16} />
               {toolMode === 'shapes' && (
-                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#252525] border border-white/20 rounded-lg shadow-xl p-2 flex gap-1.5">
+                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#1A1A1A]/70 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl p-2 flex gap-1.5">
                   <button
                     onClick={(e) => { e.stopPropagation(); setShapeMode('rect'); }}
-                    className={`p-2 rounded transition-all ${shapeMode === 'rect' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                    className={`p-2 rounded-lg transition-all ${shapeMode === 'rect' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
                     title="Rectangle"
                     data-testid="button-shape-rect"
                   >
@@ -739,7 +742,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setShapeMode('circle'); }}
-                    className={`p-2 rounded transition-all ${shapeMode === 'circle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                    className={`p-2 rounded-lg transition-all ${shapeMode === 'circle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
                     title="Circle"
                     data-testid="button-shape-circle"
                   >
@@ -747,7 +750,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setShapeMode('triangle'); }}
-                    className={`p-2 rounded transition-all ${shapeMode === 'triangle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                    className={`p-2 rounded-lg transition-all ${shapeMode === 'triangle' ? 'bg-blue-600/50 text-blue-300' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
                     title="Triangle"
                     data-testid="button-shape-triangle"
                   >
@@ -758,7 +761,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             </button>
             <button
               onClick={() => setSoloToolMode('text')}
-              className={`px-2.5 py-1.5 rounded transition-all ${toolMode === 'text' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all ${toolMode === 'text' ? 'bg-blue-600/40 text-blue-300' : 'text-neutral-400 hover:text-white'}`}
               title="Text"
               data-testid="button-tool-text"
             >
@@ -767,7 +770,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           </div>
 
           {/* Stroke Settings */}
-          <div className="flex items-center gap-3 bg-[#252525] px-4 py-1.5 rounded-lg border border-white/5">
+          <div className="flex items-center gap-3 bg-[#252525]/60 px-4 py-1.5 rounded-lg border border-white/5">
             <input
               type="color"
               value={customColor}
