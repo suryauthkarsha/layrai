@@ -37,6 +37,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [showStrokeSize, setShowStrokeSize] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [isPanning, setIsPanning] = useState(false);
+  const [isSpacePanning, setIsSpacePanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [scrollStart, setScrollStart] = useState({ left: 0, top: 0 });
   const [zoom, setZoom] = useState(0.85);
@@ -58,7 +59,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
   const isInteracting = isPanning || isDrawingToolActive || isDraggingScreen;
 
-  const fixedUILeft = sidebarIsOpened ? 'calc(50% + 192px)' : '50%';
+  const fixedUILeft = sidebarIsOpened ? 'calc(50% + 250px)' : '50%';
   const fixedUIStyle: React.CSSProperties = {
     position: 'fixed',
     left: fixedUILeft as any,
@@ -70,6 +71,23 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const getFixedScreenHeight = useCallback(() => PLATFORM_DIMENSIONS[platform].height, [platform]);
   const getFrameHeight = () => getFixedScreenHeight();
   const getFrameWidth = () => PLATFORM_DIMENSIONS[platform].width;
+
+  // Keyboard pan support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && canvasRef.current) {
+        e.preventDefault();
+        setIsSpacePanning(true);
+      }
+    };
+    const handleKeyUp = () => setIsSpacePanning(false);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   // Undo Logic
   const saveStateToHistory = (newState: Screen[]) => {
@@ -460,7 +478,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
       {/* Sidebar */}
       {activePanel === 'generate' && (
-        <div className="w-96 bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
+        <div className="w-[500px] bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
           <div className="flex items-center justify-between p-5 border-b border-white/10">
             <h2 className="text-sm font-bold text-white" data-testid="heading-generate">Generate UI</h2>
             <button onClick={() => setActivePanel(null)} className="p-1 hover:bg-white/10 rounded" data-testid="button-close-panel">
@@ -578,16 +596,16 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           ref={canvasRef} 
           className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${isGenerating ? 'viewport-generating' : ''}`}
           onMouseDown={(e) => {
-            if (toolMode === 'cursor') {
+            if ((toolMode === 'hand' || isSpacePanning) && !isPanning) {
+              setIsPanning(true);
+              setPanStart({ x: e.clientX, y: e.clientY });
+              setScrollStart({ left: canvasRef.current?.scrollLeft || 0, top: canvasRef.current?.scrollTop || 0 });
+            } else if (toolMode === 'cursor') {
               const screenTarget = (e.target as HTMLElement).closest('.draggable-screen');
               if (screenTarget) {
                 const idx = parseInt((screenTarget as HTMLElement).dataset.index || '0', 10);
                 handleDragStart(e, idx);
               }
-            } else if (toolMode === 'hand' && !isPanning) {
-              setIsPanning(true);
-              setPanStart({ x: e.clientX, y: e.clientY });
-              setScrollStart({ left: canvasRef.current?.scrollLeft || 0, top: canvasRef.current?.scrollTop || 0 });
             }
           }}
           onMouseMove={(e) => {
@@ -600,8 +618,8 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           onWheel={(e) => { 
             if (e.ctrlKey || e.metaKey) { 
               e.preventDefault(); 
-              setZoom(z => Math.min(Math.max(0.2, z - e.deltaY * 0.005), 3)); 
-            } 
+              setZoom(z => Math.min(Math.max(0.2, z - e.deltaY * 0.001), 3)); 
+            }
           }}
           style={{
             backgroundColor: '#050505',
@@ -626,13 +644,13 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           
           <div 
             id="canvas-root" 
-            className="flex gap-20 transition-transform duration-200 ease-out relative" 
+            className="flex gap-20 transition-transform duration-200 ease-out" 
             style={{ 
               transform: `scale(${zoom})`, 
+              transformOrigin: 'top left',
               minWidth: 'fit-content', 
               minHeight: 'fit-content', 
-              padding: '800px 500px', 
-              margin: 'auto', 
+              padding: '400px 300px', 
               gap: '200px' 
             }}
           >
@@ -654,9 +672,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                 data-index={idx}
                 onClick={() => setActiveScreenIndex(idx)} 
                 onMouseDown={toolMode === 'cursor' ? (e) => handleDragStart(e, idx) : undefined}
-                className={`draggable-screen absolute group ${idx === activeScreenIndex ? 'ring-4 ring-blue-500/50 z-10' : 'hover:scale-[1.01]'} ${toolMode === 'cursor' ? 'cursor-grab' : ''}`}
+                className={`draggable-screen relative group ${idx === activeScreenIndex ? 'ring-4 ring-blue-500 z-10 shadow-2xl shadow-blue-500/50' : 'hover:scale-[1.01]'} ${toolMode === 'cursor' ? 'cursor-grab' : ''}`}
                 style={{
-                  transform: `translate(${(screen.x || 0) + 500}px, ${(screen.y || 0) + 500}px) scale(${zoom})${idx === activeScreenIndex ? ' scale(1.02)' : ''}`,
+                  transform: `translate(${(screen.x || 0)}px, ${(screen.y || 0)}px)${idx === activeScreenIndex ? ' scale(1.02)' : ''}`,
                   transformOrigin: 'top left',
                   zIndex: activeScreenIndex === idx && isDraggingScreen ? 60 : activeScreenIndex === idx ? 10 : 5,
                   transition: isDraggingScreen ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -675,7 +693,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                   </div>
                 </div>
                 <div 
-                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${platform === 'mobile' ? 'w-[375px] rounded-[50px]' : 'w-[1200px] rounded-xl'}`} 
+                  className={`bg-black shadow-2xl overflow-hidden relative border-[8px] border-[#1a1a1a] ring-1 ring-white/10 ${idx === activeScreenIndex ? 'shadow-blue-500/50 shadow-2xl' : ''} ${platform === 'mobile' ? 'w-[375px] rounded-[50px]' : 'w-[1200px] rounded-xl'}`} 
                   style={{ height: getFrameHeight() + 'px' }}
                 >
                   {platform === 'mobile' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a1a] rounded-b-xl z-20 pointer-events-none"></div>}
