@@ -34,6 +34,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const [strokeSize, setStrokeSize] = useState(4);
   const [shapeMode, setShapeMode] = useState<'rect' | 'circle' | 'triangle' | null>(null);
   const [showShapeMenu, setShowShapeMenu] = useState(false);
+  const [showStrokeSize, setShowStrokeSize] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -51,15 +52,16 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
   const sidebarIsOpened = !!activePanel;
   const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
   const isInteracting = isPanning || isDrawingToolActive || isDraggingScreen;
 
-  const fixedUILeft = sidebarIsOpened ? `calc(50% + 144px)` : '50%';
+  const fixedUILeft = sidebarIsOpened ? 'calc(50% + 192px)' : '50%';
   const fixedUIStyle: React.CSSProperties = {
     position: 'fixed',
-    left: fixedUILeft,
+    left: fixedUILeft as any,
     transform: 'translateX(-50%)',
     transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     zIndex: 100
@@ -458,43 +460,60 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
 
       {/* Sidebar */}
       {activePanel === 'generate' && (
-        <div className="w-72 bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="w-96 bg-[#1A1A1A] border-r border-white/10 overflow-auto flex flex-col">
+          <div className="flex items-center justify-between p-5 border-b border-white/10">
             <h2 className="text-sm font-bold text-white" data-testid="heading-generate">Generate UI</h2>
             <button onClick={() => setActivePanel(null)} className="p-1 hover:bg-white/10 rounded" data-testid="button-close-panel">
               <X size={16} className="text-neutral-400" />
             </button>
           </div>
-          <div className="flex-1 p-4 space-y-4">
+          <div className="flex-1 p-5 space-y-5">
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-prompt">Design Prompt</label>
+              <label className="text-xs font-semibold text-neutral-300 block mb-3" data-testid="label-prompt">Design Prompt</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe the UI you want to create..."
-                className="w-full h-24 bg-[#252525] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50"
+                className="w-full h-28 bg-[#252525] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50"
                 data-testid="input-prompt"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-platform">Platform</label>
-              <select value={platform} onChange={(e) => setPlatform(e.target.value as any)} className="w-full bg-[#252525] border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-blue-500/50" data-testid="select-platform">
-                <option value="mobile">Mobile (375x812)</option>
-                <option value="desktop">Desktop (1200x800)</option>
-                <option value="general">General (1200x600)</option>
-              </select>
+              <label className="text-xs font-semibold text-neutral-300 block mb-3" data-testid="label-platform">Platform</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={() => setPlatform('mobile')} className={`p-3 rounded-lg border-2 transition-all ${platform === 'mobile' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-mobile">
+                  <div className="text-xs font-semibold">Mobile</div>
+                  <div className="text-xs text-neutral-400">375x812</div>
+                </button>
+                <button onClick={() => setPlatform('desktop')} className={`p-3 rounded-lg border-2 transition-all ${platform === 'desktop' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-desktop">
+                  <div className="text-xs font-semibold">Desktop</div>
+                  <div className="text-xs text-neutral-400">1200x800</div>
+                </button>
+                <button onClick={() => setPlatform('general')} className={`p-3 rounded-lg border-2 transition-all ${platform === 'general' ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 bg-[#252525] text-neutral-300 hover:border-white/20'}`} data-testid="button-platform-general">
+                  <div className="text-xs font-semibold">General</div>
+                  <div className="text-xs text-neutral-400">1200x600</div>
+                </button>
+              </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-neutral-300 block mb-2" data-testid="label-count">Screens</label>
-              <input type="number" min="1" max="5" value={screenCount} onChange={(e) => setScreenCount(Math.max(1, Math.min(5, parseInt(e.target.value) || 1)))} className="w-full bg-[#252525] border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-blue-500/50" data-testid="input-screen-count" />
+              <label className="text-xs font-semibold text-neutral-300 block mb-3" data-testid="label-count">Screens</label>
+              <div className="flex items-center justify-center gap-4">
+                <button onClick={() => setScreenCount(Math.max(1, screenCount - 1))} className="p-2 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-minus">
+                  <MinusCircle size={20} />
+                </button>
+                <span className="text-lg font-semibold text-white w-8 text-center" data-testid="text-screen-count">{screenCount}</span>
+                <button onClick={() => setScreenCount(Math.min(5, screenCount + 1))} className="p-2 rounded-lg bg-[#252525] border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition-all" data-testid="button-screen-plus">
+                  <PlusCircle size={20} />
+                </button>
+              </div>
             </div>
           </div>
-          <div className="p-4 border-t border-white/10 space-y-2">
-            <button onClick={handleGenerate} disabled={isGenerating || !prompt} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2" data-testid="button-generate">
+          <div className="p-5 border-t border-white/10 space-y-2">
+            <button onClick={handleGenerate} disabled={isGenerating || !prompt} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-sm font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2" data-testid="button-generate">
               {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
               {isGenerating ? 'Generating...' : 'Generate'}
             </button>
-            <button onClick={() => setActivePanel(null)} className="w-full bg-neutral-800/50 hover:bg-neutral-700/50 text-white text-sm font-semibold py-2 rounded-lg transition-colors" data-testid="button-cancel">Cancel</button>
+            <button onClick={() => setActivePanel(null)} className="w-full bg-neutral-800/50 hover:bg-neutral-700/50 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors" data-testid="button-cancel">Cancel</button>
           </div>
         </div>
       )}
@@ -502,7 +521,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       {/* Main Editor */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar - Floating Glass */}
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-xl bg-black/50 border border-white/10 rounded-2xl shadow-xl px-6 py-3 flex items-center justify-between gap-6">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/30 border border-white/5 rounded-2xl shadow-2xl px-6 py-3 flex items-center justify-between gap-6">
           <button onClick={onBack} className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-all" data-testid="button-back">
             <ArrowLeft size={18} />
           </button>
@@ -692,7 +711,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         </div>
 
         {/* Bottom Toolbar - Floating Glass */}
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-xl bg-black/50 border border-white/10 rounded-2xl shadow-xl px-4 py-3 flex items-center justify-center gap-3">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-2xl bg-black/30 border border-white/5 rounded-2xl shadow-2xl px-4 py-3 flex items-center justify-center gap-3">
           <button onClick={() => setSoloToolMode('cursor')} className={`p-2.5 rounded-lg transition-all ${toolMode === 'cursor' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/50' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`} data-testid="button-tool-cursor">
             <MousePointer2 size={18} />
           </button>
@@ -736,10 +755,20 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             <RotateCcw size={18} />
           </button>
 
-          <div className="flex items-center gap-2 px-2 py-1">
-            <input type="color" value={customColor} onChange={(e) => setCustomColor(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border border-white/20 hover:border-white/30" data-testid="input-color" />
-            <input type="range" min="1" max="20" value={strokeSize} onChange={(e) => setStrokeSize(parseInt(e.target.value))} className="w-20" data-testid="input-stroke-size" />
-            <span className="text-xs text-neutral-400 w-8 text-right">{strokeSize}px</span>
+          <button onClick={() => colorInputRef.current?.click()} className="p-2.5 rounded-full transition-all border-2 border-white/20 hover:border-white/40" style={{ backgroundColor: customColor }} title="Click to change color" data-testid="button-color-picker">
+          </button>
+          <input ref={colorInputRef} type="color" value={customColor} onChange={(e) => setCustomColor(e.target.value)} className="hidden" data-testid="input-color-hidden" />
+
+          <div className="relative">
+            <button onClick={() => setShowStrokeSize(!showStrokeSize)} className="p-2.5 rounded-lg transition-all text-neutral-400 hover:text-white hover:bg-white/10" data-testid="button-stroke-toggle">
+              <span className="text-xs font-semibold">{strokeSize}px</span>
+            </button>
+            {showStrokeSize && (
+              <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl p-3 flex flex-col gap-2">
+                <input type="range" min="1" max="20" value={strokeSize} onChange={(e) => setStrokeSize(parseInt(e.target.value))} className="w-24" data-testid="input-stroke-size" />
+                <span className="text-xs text-neutral-400 text-center">{strokeSize}px</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
