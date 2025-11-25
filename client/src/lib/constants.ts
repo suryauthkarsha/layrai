@@ -1,6 +1,6 @@
 // Hero image and background
 export const HERO_IMAGE_URL = "https://i.ibb.co/TB7TwKbS/Gemini-Generated-Image_fqobwbfqobwbfqob.png";
-export const HERO_BACKGROUND_GRADIENT = "linear-gradient(135deg, #1a1a1a, #0f0f0f)";
+export const HERO_BACKGROUND_GRADIENT = "none";
 
 // Unsplash image collection
 export const UNSPLASH_COLLECTION = [
