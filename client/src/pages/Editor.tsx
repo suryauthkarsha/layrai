@@ -719,11 +719,11 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           >
             {/* Initial placeholder */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed top-1/3 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
-                <div className="w-32 h-32 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
-                  <Wand2 size={48} className="text-blue-400" />
+              <div className="fixed top-24 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
+                <div className="w-40 h-40 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
+                  <Wand2 size={60} className="text-blue-400" />
                 </div>
-                <p className="mt-6 text-neutral-300 text-2xl font-semibold tracking-wide" data-testid="text-placeholder">Start Architecting</p>
+                <p className="mt-8 text-neutral-300 text-4xl font-bold tracking-widest" data-testid="text-placeholder">Start Architecting</p>
               </div>
             )}
 
