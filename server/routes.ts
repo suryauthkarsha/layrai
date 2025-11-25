@@ -17,6 +17,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "API key not configured" });
       }
 
+      // Log key validation (without exposing the full key)
+      console.log(`[API] Using GEMINI_API_KEY (${apiKey.substring(0, 8)}...)`);
+
       const systemPrompt = getSystemPrompt(screenCount || 1, platform || 'mobile', []);
 
       const response = await fetch(
