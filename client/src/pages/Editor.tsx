@@ -344,6 +344,13 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     };
   }, [isDraggingScreen, activeScreenIndex, dragOffset, zoom, generatedScreens]);
 
+  // Scroll to left on mount
+  useEffect(() => {
+    if (canvasRef.current) {
+      canvasRef.current.scrollLeft = 0;
+    }
+  }, []);
+
   // Center canvas
   useEffect(() => {
     if (canvasRef.current && generatedScreens.length > 0) {
@@ -728,7 +735,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           >
             {/* Initial placeholder - centered on canvas */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed z-10 flex flex-col items-center justify-center" style={{ left: 'calc(50% + 60px)', top: 'calc(50% + 20%)', transform: 'translate(-50%, -50%)' }}>
+              <div className="fixed z-10 flex flex-col items-center justify-center" style={{ left: 'calc(50% + 60px)', top: '50%', transform: 'translate(-50%, -50%)' }}>
                 <div className="w-40 h-40 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
                   <Wand2 size={60} className="text-blue-400" />
                 </div>
