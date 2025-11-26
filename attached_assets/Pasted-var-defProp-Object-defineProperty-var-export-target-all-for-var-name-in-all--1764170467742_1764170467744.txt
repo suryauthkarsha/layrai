@@ -1,0 +1,468 @@
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// server/index-prod.ts
+import fs from "node:fs";
+import path from "node:path";
+import express2 from "express";
+
+// server/app.ts
+import express from "express";
+
+// server/routes.ts
+import { createServer } from "http";
+import { GoogleGenAI } from "@google/genai";
+
+// shared/schema.ts
+var schema_exports = {};
+__export(schema_exports, {
+  drawingSchema: () => drawingSchema,
+  insertProjectSchema: () => insertProjectSchema,
+  insertScreenSchema: () => insertScreenSchema,
+  projectSchema: () => projectSchema,
+  screenSchema: () => screenSchema,
+  sessions: () => sessions,
+  users: () => users
+});
+import { z } from "zod";
+import { sql } from "drizzle-orm";
+import { pgTable, varchar, timestamp, index, jsonb } from "drizzle-orm/pg-core";
+var sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull()
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)]
+);
+var users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+var drawingSchema = z.object({
+  color: z.string(),
+  points: z.array(z.object({ x: z.number(), y: z.number() })),
+  strokeWidth: z.number(),
+  isEraser: z.boolean().optional()
+});
+var screenSchema = z.object({
+  name: z.string(),
+  rawHtml: z.string(),
+  type: z.string(),
+  height: z.number(),
+  x: z.number().optional().default(0),
+  y: z.number().optional().default(0)
+});
+var projectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  updatedAt: z.number(),
+  data: z.object({
+    screens: z.array(screenSchema)
+  })
+});
+var insertScreenSchema = screenSchema.omit({ x: true, y: true });
+var insertProjectSchema = projectSchema.omit({ id: true });
+
+// server/db.ts
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
+neonConfig.webSocketConstructor = ws;
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?"
+  );
+}
+var pool = new Pool({ connectionString: process.env.DATABASE_URL });
+var db = drizzle({ client: pool, schema: schema_exports });
+
+// server/storage.ts
+import { eq } from "drizzle-orm";
+var DatabaseStorage = class {
+  async getUser(id) {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+  async upsertUser(userData) {
+    const [user] = await db.insert(users).values(userData).onConflictDoUpdate({
+      target: users.id,
+      set: {
+        ...userData,
+        updatedAt: /* @__PURE__ */ new Date()
+      }
+    }).returning();
+    return user;
+  }
+};
+var storage = new DatabaseStorage();
+
+// server/replitAuth.ts
+import * as client from "openid-client";
+import { Strategy } from "openid-client/passport";
+import passport from "passport";
+import session from "express-session";
+import memoize from "memoizee";
+import connectPg from "connect-pg-simple";
+var getOidcConfig = memoize(
+  async () => {
+    return await client.discovery(
+      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      process.env.REPL_ID
+    );
+  },
+  { maxAge: 3600 * 1e3 }
+);
+function getSession() {
+  const sessionTtl = 7 * 24 * 60 * 60 * 1e3;
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    ttl: sessionTtl,
+    tableName: "sessions"
+  });
+  return session({
+    secret: process.env.SESSION_SECRET,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: true,
+      maxAge: sessionTtl
+    }
+  });
+}
+function updateUserSession(user, tokens) {
+  user.claims = tokens.claims();
+  user.access_token = tokens.access_token;
+  user.refresh_token = tokens.refresh_token;
+  user.expires_at = user.claims?.exp;
+}
+async function upsertUser(claims) {
+  await storage.upsertUser({
+    id: claims["sub"],
+    email: claims["email"],
+    firstName: claims["first_name"],
+    lastName: claims["last_name"],
+    profileImageUrl: claims["profile_image_url"]
+  });
+}
+async function setupAuth(app2) {
+  app2.set("trust proxy", 1);
+  app2.use(getSession());
+  app2.use(passport.initialize());
+  app2.use(passport.session());
+  const config = await getOidcConfig();
+  const verify = async (tokens, verified) => {
+    const user = {};
+    updateUserSession(user, tokens);
+    await upsertUser(tokens.claims());
+    verified(null, user);
+  };
+  const registeredStrategies = /* @__PURE__ */ new Set();
+  const ensureStrategy = (domain) => {
+    const strategyName = `replitauth:${domain}`;
+    if (!registeredStrategies.has(strategyName)) {
+      const strategy = new Strategy(
+        {
+          name: strategyName,
+          config,
+          scope: "openid email profile offline_access",
+          callbackURL: `https://${domain}/api/callback`
+        },
+        verify
+      );
+      passport.use(strategy);
+      registeredStrategies.add(strategyName);
+    }
+  };
+  passport.serializeUser((user, cb) => cb(null, user));
+  passport.deserializeUser((user, cb) => cb(null, user));
+  app2.get("/api/login", (req, res, next) => {
+    ensureStrategy(req.hostname);
+    passport.authenticate(`replitauth:${req.hostname}`, {
+      prompt: "login consent",
+      scope: ["openid", "email", "profile", "offline_access"]
+    })(req, res, next);
+  });
+  app2.get("/api/callback", (req, res, next) => {
+    ensureStrategy(req.hostname);
+    passport.authenticate(`replitauth:${req.hostname}`, {
+      successReturnToOrRedirect: "/",
+      failureRedirect: "/api/login"
+    })(req, res, next);
+  });
+  app2.get("/api/logout", (req, res) => {
+    req.logout(() => {
+      res.redirect(
+        client.buildEndSessionUrl(config, {
+          client_id: process.env.REPL_ID,
+          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`
+        }).href
+      );
+    });
+  });
+}
+var isAuthenticated = async (req, res, next) => {
+  const user = req.user;
+  if (!req.isAuthenticated() || !user.expires_at) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const now = Math.floor(Date.now() / 1e3);
+  if (now <= user.expires_at) {
+    return next();
+  }
+  const refreshToken = user.refresh_token;
+  if (!refreshToken) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  try {
+    const config = await getOidcConfig();
+    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    updateUserSession(user, tokenResponse);
+    return next();
+  } catch (error) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+};
+
+// server/lib/image-db.ts
+var IMAGE_DATABASE = [
+  "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3945683/pexels-photo-3945683.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3714896/pexels-photo-3714896.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3808517/pexels-photo-3808517.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3975517/pexels-photo-3975517.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3930986/pexels-photo-3930986.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3962286/pexels-photo-3962286.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3857885/pexels-photo-3857885.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3808514/pexels-photo-3808514.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3913025/pexels-photo-3913025.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3808516/pexels-photo-3808516.jpeg?auto=compress&cs=tinysrgb&w=600",
+  "https://images.pexels.com/photos/3755681/pexels-photo-3755681.jpeg?auto=compress&cs=tinysrgb&w=600"
+];
+function getRandomImages(count = 3) {
+  const images = [];
+  for (let i = 0; i < count; i++) {
+    const randomIndex = Math.floor(Math.random() * IMAGE_DATABASE.length);
+    images.push(IMAGE_DATABASE[randomIndex]);
+  }
+  return images;
+}
+
+// server/routes.ts
+async function registerRoutes(app2) {
+  await setupAuth(app2);
+  app2.get("/api/auth/user", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const user = await storage.getUser(userId);
+      res.json(user || null);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  app2.post("/api/generate-ui", async (req, res) => {
+    try {
+      const { prompt, screenCount, platform } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+      const apiKey = process.env.GEMINI_API_KEY?.trim();
+      if (!apiKey) {
+        return res.status(500).json({ error: "API key not configured" });
+      }
+      const imageUrls = getRandomImages(Math.min(3, screenCount || 1));
+      const systemPrompt = getSystemPrompt(screenCount || 1, platform || "mobile", [], imageUrls);
+      console.log(`[Generation] Starting UI generation for ${screenCount} screen(s)...`);
+      const startTime = Date.now();
+      const ai = new GoogleGenAI({ apiKey });
+      const geminiResponse = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{
+          parts: [{
+            text: `${systemPrompt}
+
+USER REQUEST: "${prompt}"`
+          }]
+        }]
+      });
+      const generationTime = Date.now() - startTime;
+      console.log(`[Generation] AI response received in ${generationTime}ms`);
+      if (!geminiResponse?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        return res.status(500).json({ error: "No content generated" });
+      }
+      const text = geminiResponse.candidates[0].content.parts[0].text;
+      const htmlBlockRegex = /```html\n([\s\S]*?)```/g;
+      const extractedHtml = [];
+      let match;
+      while ((match = htmlBlockRegex.exec(text)) !== null) {
+        extractedHtml.push(match[1].trim());
+      }
+      if (extractedHtml.length === 0) {
+        const firstDiv = text.indexOf("<div");
+        const lastDiv = text.lastIndexOf("</div>");
+        if (firstDiv !== -1 && lastDiv !== -1 && lastDiv > firstDiv) {
+          const rawHtml = text.substring(firstDiv, lastDiv + 6).trim();
+          extractedHtml.push(rawHtml);
+        }
+      }
+      console.log(`[Generation] Extracted ${extractedHtml.length} screen(s)`);
+      res.json({ screens: extractedHtml });
+    } catch (error) {
+      console.error("Generation error:", error);
+      res.status(500).json({ error: error.message || "Generation failed" });
+    }
+  });
+  const httpServer = createServer(app2);
+  return httpServer;
+}
+function getSystemPrompt(screenCount, platform, features, imageUrls = []) {
+  const imageExamples = imageUrls.length > 0 ? `
+**REAL IMAGE URLS TO USE (MUST USE THESE - copy and paste exactly):**
+${imageUrls.map((url, i) => `${i + 1}. ${url}`).join("\n")}
+
+YOU MUST USE THESE EXACT URLS IN <img> TAGS - DO NOT MODIFY THEM.` : "";
+  return `
+You are a specialized UI Generator that creates beautiful, realistic designs with REQUIRED imagery and emojis.
+TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/Tailwind CSS based on the user's prompt.
+
+**CRITICAL RULES - MUST FOLLOW:**
+1. **OUTPUT RAW HTML ONLY.** Do not wrap in JSON. Use Markdown code blocks ONLY for readability: \`\`\`html ... \`\`\`.
+2. **FORMAT:** Generate ${screenCount} DISTINCT screens. Wrap each screen's HTML code in a standard Markdown code block like this:
+   
+   \`\`\`html
+   <!-- Screen: [A Unique Name for Screen] -->
+   <div class="w-full h-full min-h-screen bg-white [styles]">
+      ... content ...
+   </div>
+   \`\`\`
+   
+3. **EMOJIS - PRIMARY FOCUS, 100% MANDATORY IN EVERY DESIGN:**
+   - ADD LOTS OF EMOJIS TO EVERY DESIGN - they are PRIMARY visual elements that make designs engaging
+   - Use emojis extensively in headings, buttons, section titles, and throughout the design
+   - Use emojis as section dividers, bullet points, icons, and visual accents everywhere
+   - Include contextual emojis: \u{1F3A8} for art, \u{1F4CA} for analytics, \u{1F4B0} for pricing, \u{1F3AF} for goals, \u{1F465} for team, \u{1F680} for growth, \u{1F4A1} for ideas, \u2B50 for ratings, \u2705 for success, etc.
+   - Minimum 15-20+ emojis spread throughout each design
+   - Emojis should be large and prominent - use them as visual replacements for icons
+   - Use emoji combinations: \u{1F389}\u2728\u{1F680}, \u{1F4A1}\u{1F525}\u26A1, etc.
+   - Emojis enhance visual hierarchy and make the design fun and engaging
+
+4. **IMAGES - OPTIONAL (use emojis instead when possible):**
+   - Optional: You MAY include 1-2 images if it enhances the design significantly
+   - Use REAL image URLs provided below if you choose to include images
+   - Prefer emojis over images for icons, bullets, and visual elements
+   - If using images, place them prominently in hero sections or backgrounds only
+   - CSS gradients and SVG are good alternatives to images
+
+5. **LAYOUT:** The root div MUST have 'w-full h-full min-h-screen' to fill the frame.
+6. **CONTENT:** Make it look realistic. Fill text with relevant content. Add depth with shadows and layering.
+7. **STYLING:** Use Tailwind CSS extensively. Include hover effects, transitions, and visual polish.
+8. **NO JAVASCRIPT.** Pure HTML/CSS structure only.
+
+User Prompt Context: ${platform} Application.
+FEATURES: ${features.join(", ") || "Modern UI"}.
+
+${imageExamples}
+
+**WARNING:** Every <img> tag MUST have a valid src URL. Empty img tags or placeholder divs will cause rejection.
+Make your designs STUNNING with beautiful, real imagery AND EMOJIS.
+`;
+}
+
+// server/app.ts
+function log(message, source = "express") {
+  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+var app = express();
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+app.use(express.urlencoded({ extended: false }));
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path2 = req.path;
+  let capturedJsonResponse = void 0;
+  const originalResJson = res.json;
+  res.json = function(bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path2.startsWith("/api")) {
+      let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "\u2026";
+      }
+      log(logLine);
+    }
+  });
+  next();
+});
+async function runApp(setup) {
+  const server = await registerRoutes(app);
+  app.use((err, _req, res, _next) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+    throw err;
+  });
+  await setup(app, server);
+  const port = parseInt(process.env.PORT || "5000", 10);
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true
+  }, () => {
+    log(`serving on port ${port}`);
+  });
+}
+
+// server/index-prod.ts
+async function serveStatic(app2, _server) {
+  const distPath = path.resolve(import.meta.dirname, "public");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express2.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path.resolve(distPath, "index.html"));
+  });
+}
+(async () => {
+  await runApp(serveStatic);
+})();
+export {
+  serveStatic
+};
