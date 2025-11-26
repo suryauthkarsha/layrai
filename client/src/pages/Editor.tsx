@@ -736,7 +736,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           >
             {/* Initial placeholder - centered on canvas */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed z-10 flex flex-col items-center justify-center" style={{ left: sidebarIsOpened ? `calc(50% + ${sidebarWidth / 2}px)` : '50%', top: '50%', transform: 'translate(-50%, -50%)', transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+              <div className="fixed z-10 flex flex-col items-center justify-center" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
                 <div className="w-56 h-56 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
                   <Wand2 size={100} className="text-blue-400" />
                 </div>
