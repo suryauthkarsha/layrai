@@ -371,23 +371,25 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     const skeletonHeight = getFixedScreenHeight();
     const skeletonHtml = `<div class="w-full h-full bg-neutral-950 flex flex-col items-center justify-center text-neutral-600 font-mono animate-pulse p-8"><div class="w-16 h-16 bg-neutral-800 rounded-full mb-6"></div><div class="w-3/4 h-4 bg-neutral-800 rounded mb-3"></div><div class="w-1/2 h-4 bg-neutral-800 rounded"></div></div>`;
     
-    // Center screens in the visible canvas
+    // Center screens in the visible canvas under top bar
     const frameWidth = getFrameWidth();
     const frameHeight = getFixedScreenHeight();
     
-    // Calculate center position based on viewport size
+    // Calculate center position in viewport
     const viewportWidth = canvasRef.current?.clientWidth || 1000;
     const viewportHeight = canvasRef.current?.clientHeight || 800;
     
-    const centerX = Math.max(300, viewportWidth / 2 / zoom - frameWidth / 2);
-    const centerY = Math.max(300, viewportHeight / 2 / zoom - frameHeight / 2);
+    // Position multiple screens horizontally centered, with gap between them
+    const totalScreensWidth = screenCount * frameWidth + (screenCount - 1) * 100;
+    const startX = (viewportWidth / zoom - totalScreensWidth) / 2 + 300;
+    const centerY = (viewportHeight / zoom - frameHeight) / 2 + 200;
 
     const newScreens: Screen[] = Array.from({ length: screenCount }).map((_, i) => ({
       name: `Screen ${i + 1}`,
       rawHtml: skeletonHtml,
       type: 'html',
       height: skeletonHeight,
-      x: centerX + i * (frameWidth + 100),
+      x: startX + i * (frameWidth + 100),
       y: centerY
     }));
 
@@ -724,9 +726,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               gap: '300px' 
             }}
           >
-            {/* Initial placeholder */}
+            {/* Initial placeholder - centered below top bar */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed top-16 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
+              <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
                 <div className="w-40 h-40 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
                   <Wand2 size={60} className="text-blue-400" />
                 </div>

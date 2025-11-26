@@ -87,10 +87,10 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - hide vertical, show horizontal only */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 0px;
+  height: 20px;
 }
 
 ::-webkit-scrollbar-track {
@@ -98,14 +98,35 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #000;
-  border-radius: 6px;
-  border: 3px solid transparent;
+  background: #3b82f6;
+  border-radius: 10px;
+  border: 4px solid transparent;
   background-clip: content-box;
+  min-height: 40px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #1a1a1a;
+  background: #60a5fa;
+  background-clip: content-box;
+}
+
+/* For viewport container, show both scrollbars */
+.viewport-container::-webkit-scrollbar {
+  width: 20px;
+  height: 20px;
+}
+
+.viewport-container::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 10px;
+  border: 4px solid transparent;
+  background-clip: content-box;
+  min-height: 40px;
+  min-width: 40px;
+}
+
+.viewport-container::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa;
   background-clip: content-box;
 }
 
