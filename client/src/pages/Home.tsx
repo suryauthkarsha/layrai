@@ -1,4 +1,4 @@
-import { Wand2, Plus, Trash2 } from 'lucide-react';
+import { Wand2, Plus, Trash2, LogOut } from 'lucide-react';
 import type { Project } from '@shared/schema';
 import { HERO_IMAGE_URL, HERO_BACKGROUND_GRADIENT } from '@/lib/constants';
 
@@ -50,13 +50,22 @@ export default function Home({ projects, onCreate, onDelete, onOpen }: HomeProps
               <Wand2 size={28} className="text-blue-400 transform rotate-6" data-testid="icon-logo" />
               <h1 className="text-3xl font-extrabold tracking-tight text-white" data-testid="text-app-title">LAYR AI</h1>
             </div>
-            <button 
-              onClick={onCreate} 
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-500 transition-colors flex items-center gap-2 shadow-lg shadow-blue-900/30"
-              data-testid="button-new-project"
-            >
-              <Plus size={16} /> New Project
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={onCreate} 
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-500 transition-colors flex items-center gap-2 shadow-lg shadow-blue-900/30"
+                data-testid="button-new-project"
+              >
+                <Plus size={16} /> New Project
+              </button>
+              <a 
+                href="/api/logout" 
+                className="px-4 py-2.5 bg-neutral-700 text-white rounded-lg text-sm font-semibold hover:bg-neutral-600 transition-colors flex items-center gap-2"
+                data-testid="button-logout"
+              >
+                <LogOut size={16} /> Sign Out
+              </a>
+            </div>
           </div>
         </div>
 
