@@ -16,40 +16,46 @@ export const loadScript = (src: string): Promise<void> => new Promise((resolve, 
   document.head.appendChild(script);
 });
 
-// Capture element as canvas using html2canvas
+// Capture element as canvas - simple html2canvas approach
 export const captureElement = async (
   elementId: string | null, 
   filename?: string,
   scaleFactor = 3, 
   fullViewport = false
 ): Promise<HTMLCanvasElement | null> => {
-  // @ts-ignore - html2canvas is loaded dynamically
-  if (!window.html2canvas) {
-    await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
-  }
-  
   try {
     if (!elementId) return null;
+    
+    // Load html2canvas first
+    // @ts-ignore
+    if (!window.html2canvas) {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+    }
+    
+    // @ts-ignore
+    const html2canvas = window.html2canvas;
+    if (!html2canvas) return null;
+    
     const element = document.getElementById(elementId);
     if (!element) return null;
     
-    // Capture the element and its iframe visually without accessing internal content
+    // Simple direct render - let html2canvas handle everything
     // @ts-ignore
-    const canvas = await window.html2canvas(element, { 
+    const canvas = await html2canvas(element, {
       backgroundColor: '#000000',
       scale: scaleFactor,
       useCORS: true,
       allowTaint: true,
-      logging: false,
-      imageTimeout: 0,
-      foreignObjectRendering: true
+      logging: false
     });
     
     if (canvas && filename) {
       const a = document.createElement('a');
       a.href = canvas.toDataURL('image/png');
       a.download = `${filename}.png`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
     }
     return canvas;
   } catch (error) {
