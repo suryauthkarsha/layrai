@@ -726,9 +726,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               gap: '300px' 
             }}
           >
-            {/* Initial placeholder - centered below top bar */}
+            {/* Initial placeholder - right under top bar */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center justify-center">
+              <div className="fixed top-24 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
                 <div className="w-40 h-40 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
                   <Wand2 size={60} className="text-blue-400" />
                 </div>
