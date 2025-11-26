@@ -28,85 +28,31 @@ export const captureElement = async (
     await loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
   }
   
-  const options = { 
-    backgroundColor: '#050505', 
-    scale: scaleFactor, 
-    useCORS: true, 
-    allowTaint: true,
-    logging: false,
-    imageTimeout: 0,
-    ignoreElements: (element: Element) => {
-      // Ignore canvas overlay and other UI elements
-      if (element.classList?.contains('overlay-canvas')) return true;
-      if (element.classList?.contains('viewport-controls')) return true;
-      return false;
-    }
-  };
-  
   try {
-    if (fullViewport) {
-      const element = document.querySelector('.viewport-container') as HTMLElement;
-      if (!element) return null;
-      // @ts-ignore
-      const canvas = await window.html2canvas(element, { 
-        ...options, 
-        x: element.scrollLeft, 
-        y: element.scrollTop, 
-        width: element.clientWidth, 
-        height: element.clientHeight, 
-        windowWidth: element.clientWidth, 
-        windowHeight: element.clientHeight 
-      });
-      if (canvas && filename) {
-        const a = document.createElement('a');
-        a.href = canvas.toDataURL('image/png');
-        a.download = `${filename}.png`;
-        a.click();
-      }
-      return canvas;
-    } else {
-      if (!elementId) return null;
-      const element = document.getElementById(elementId);
-      if (!element) return null;
-      
-      // Look for iframe inside the element and capture its content
-      const iframe = element.querySelector('iframe') as HTMLIFrameElement;
-      if (iframe) {
-        try {
-          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (iframeDoc) {
-            // Capture the iframe document
-            // @ts-ignore
-            const canvas = await window.html2canvas(iframeDoc.body || iframeDoc.documentElement, {
-              ...options,
-              backgroundColor: '#ffffff'
-            });
-            if (canvas && filename) {
-              const a = document.createElement('a');
-              a.href = canvas.toDataURL('image/png');
-              a.download = `${filename}.png`;
-              a.click();
-            }
-            return canvas;
-          }
-        } catch (iframeError) {
-          console.warn('Could not access iframe content, capturing element instead:', iframeError);
-        }
-      }
-      
-      // Fallback: capture the element itself
-      // @ts-ignore
-      const canvas = await window.html2canvas(element, options);
-      if (canvas && filename) {
-        const a = document.createElement('a');
-        a.href = canvas.toDataURL('image/png');
-        a.download = `${filename}.png`;
-        a.click();
-      }
-      return canvas;
+    if (!elementId) return null;
+    const element = document.getElementById(elementId);
+    if (!element) return null;
+    
+    // Simple direct capture of the element
+    // @ts-ignore
+    const canvas = await window.html2canvas(element, { 
+      backgroundColor: '#000000',
+      scale: scaleFactor,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      imageTimeout: 0
+    });
+    
+    if (canvas && filename) {
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = `${filename}.png`;
+      a.click();
     }
+    return canvas;
   } catch (error) {
-    console.error('Capture error:', error);
+    console.error('Screenshot capture error:', error);
     return null;
   }
 };
