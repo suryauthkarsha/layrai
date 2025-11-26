@@ -4,58 +4,89 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { Project } from '@shared/schema';
+import type { Project, DBProject } from '@shared/schema';
 import Home from "@/pages/Home";
 import Editor from "@/pages/Editor";
 import Landing from "@/pages/Landing";
 import { useAuth } from "@/hooks/useAuth";
-
-const STORAGE_KEY = 'layr_projects_v3';
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [location, setLocation] = useLocation();
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
 
-  // Load projects from localStorage
+  // Load projects from API when authenticated
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+    if (!isAuthenticated || isLoading) return;
+    
+    const loadProjects = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        setProjects(parsed);
-      } catch (e) {
-        console.error('Failed to parse projects from localStorage', e);
+        setIsLoadingProjects(true);
+        const response = await fetch('/api/projects');
+        if (response.ok) {
+          const dbProjects: DBProject[] = await response.json();
+          // Convert DBProject to Project format
+          const convertedProjects: Project[] = dbProjects.map(p => ({
+            id: p.id,
+            name: p.name,
+            updatedAt: p.updatedAt ? new Date(p.updatedAt).getTime() : Date.now(),
+            data: p.data as any
+          }));
+          setProjects(convertedProjects);
+        }
+      } catch (error) {
+        console.error('Failed to load projects:', error);
+      } finally {
+        setIsLoadingProjects(false);
       }
-    }
-  }, []);
-
-  // Save projects to localStorage
-  useEffect(() => {
-    if (projects.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-    }
-  }, [projects]);
-
-  const handleCreateProject = () => {
-    const newProject: Project = {
-      id: `project_${Date.now()}`,
-      name: `Project ${projects.length + 1}`,
-      updatedAt: Date.now(),
-      data: { screens: [] }
     };
-    setProjects(prev => [...prev, newProject]);
-    setActiveProjectId(newProject.id);
-    setLocation('/editor');
+    
+    loadProjects();
+  }, [isAuthenticated, isLoading]);
+
+  const handleCreateProject = async () => {
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `Project ${projects.length + 1}`,
+          data: { screens: [] }
+        })
+      });
+      
+      if (response.ok) {
+        const newDBProject: DBProject = await response.json();
+        const newProject: Project = {
+          id: newDBProject.id,
+          name: newDBProject.name,
+          updatedAt: newDBProject.updatedAt ? new Date(newDBProject.updatedAt).getTime() : Date.now(),
+          data: newDBProject.data as any
+        };
+        setProjects(prev => [...prev, newProject]);
+        setActiveProjectId(newProject.id);
+        setLocation('/editor');
+      }
+    } catch (error) {
+      console.error('Failed to create project:', error);
+    }
   };
 
-  const handleDeleteProject = (id: string) => {
+  const handleDeleteProject = async (id: string) => {
     if (confirm('Delete this project?')) {
-      setProjects(prev => prev.filter(p => p.id !== id));
-      if (activeProjectId === id) {
-        setActiveProjectId(null);
-        setLocation('/');
+      try {
+        const response = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+          setProjects(prev => prev.filter(p => p.id !== id));
+          if (activeProjectId === id) {
+            setActiveProjectId(null);
+            setLocation('/');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to delete project:', error);
       }
     }
   };
@@ -65,8 +96,20 @@ function Router() {
     setLocation('/editor');
   };
 
-  const handleSaveProject = (updatedProject: Project) => {
-    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+  const handleSaveProject = async (updatedProject: Project) => {
+    try {
+      const response = await fetch(`/api/projects/${updatedProject.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: updatedProject.data })
+      });
+      
+      if (response.ok) {
+        setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+      }
+    } catch (error) {
+      console.error('Failed to save project:', error);
+    }
   };
 
   const handleBackToHome = () => {
@@ -76,7 +119,7 @@ function Router() {
 
   const activeProject = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
 
-  if (isLoading) {
+  if (isLoading || isLoadingProjects) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#050505] text-white">
         <p className="text-xl">Loading...</p>

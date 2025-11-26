@@ -24,6 +24,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all projects for user
+  app.get('/api/projects', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userProjects = await storage.getUserProjects(userId);
+      res.json(userProjects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  // Create new project
+  app.post('/api/projects', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const { name, data } = req.body;
+      if (!name) {
+        return res.status(400).json({ message: "Project name required" });
+      }
+      const newProject = await storage.createProject({
+        userId,
+        name,
+        data: data || { screens: [] }
+      });
+      res.json(newProject);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      res.status(500).json({ message: "Failed to create project" });
+    }
+  });
+
+  // Update project
+  app.patch('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const { id } = req.params;
+      const { name, data } = req.body;
+      
+      const project = await storage.getProject(id, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      const updated = await storage.updateProject(id, userId, data || project.data);
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating project:", error);
+      if (error.message === "Unauthorized") {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      res.status(500).json({ message: "Failed to update project" });
+    }
+  });
+
+  // Delete project
+  app.delete('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const { id } = req.params;
+      
+      await storage.deleteProject(id, userId);
+      res.json({ message: "Project deleted" });
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      if (error.message === "Unauthorized") {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      res.status(500).json({ message: "Failed to delete project" });
+    }
+  });
+
   // AI Generation API endpoint
   app.post("/api/generate-ui", async (req, res) => {
     try {

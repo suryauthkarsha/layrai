@@ -25,9 +25,23 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Projects table - store user's projects in database
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  name: varchar("name").notNull(),
+  data: jsonb("data").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [index("IDX_projects_user_id").on(table.userId)]);
+
 // --- User Types ---
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+// --- Project Types ---
+export type DBProject = typeof projects.$inferSelect;
+export type InsertDBProject = typeof projects.$inferInsert;
 
 // --- AI Layr Data Schemas ---
 
