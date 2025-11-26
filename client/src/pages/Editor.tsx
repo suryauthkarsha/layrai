@@ -724,7 +724,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           
           <div 
             id="canvas-root" 
-            className="flex gap-32 transition-transform duration-200 ease-out" 
+            className="flex gap-32 transition-transform duration-200 ease-out relative" 
             style={{ 
               transform: `scale(${zoom})`, 
               transformOrigin: 'top left',
@@ -734,9 +734,17 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
               gap: '300px' 
             }}
           >
-            {/* Initial placeholder - centered on canvas */}
+            {/* Logo placeholder - centered in canvas */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed z-10 flex flex-col items-center justify-center" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
+              <div 
+                className="absolute z-10 flex flex-col items-center justify-center" 
+                style={{ 
+                  top: '50vh', 
+                  left: '50%', 
+                  transform: 'translate(-50%, -50%)',
+                  pointerEvents: 'none'
+                }}
+              >
                 <div className="w-56 h-56 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
                   <Wand2 size={100} className="text-blue-400" />
                 </div>
