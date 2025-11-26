@@ -1,0 +1,93 @@
+2025-11-26T15:39:34.181278109Z ==> Cloning from https://github.com/suryauthkarsha/layr
+2025-11-26T15:39:35.052516145Z ==> Checking out commit 139a50f44baeb7e433050a693d960fa9c903c522 in branch main
+2025-11-26T15:39:38.965079393Z ==> Using Node.js version 22.16.0 (default)
+2025-11-26T15:39:38.989875422Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2025-11-26T15:39:40.978769211Z ==> Running build command 'npm install; npm run build'...
+2025-11-26T15:39:48.887632433Z 
+2025-11-26T15:39:48.887659274Z added 519 packages, and audited 520 packages in 8s
+2025-11-26T15:39:48.887702567Z 
+2025-11-26T15:39:48.887718578Z 72 packages are looking for funding
+2025-11-26T15:39:48.887725399Z   run `npm fund` for details
+2025-11-26T15:39:48.910442554Z 
+2025-11-26T15:39:48.910464875Z 9 vulnerabilities (3 low, 5 moderate, 1 high)
+2025-11-26T15:39:48.910468345Z 
+2025-11-26T15:39:48.910471995Z To address issues that do not require attention, run:
+2025-11-26T15:39:48.910475336Z   npm audit fix
+2025-11-26T15:39:48.910478036Z 
+2025-11-26T15:39:48.910480916Z To address all issues (including breaking changes), run:
+2025-11-26T15:39:48.910484356Z   npm audit fix --force
+2025-11-26T15:39:48.910487046Z 
+2025-11-26T15:39:48.910490477Z Run `npm audit` for details.
+2025-11-26T15:39:49.086618131Z 
+2025-11-26T15:39:49.086637792Z > rest-express@1.0.0 build
+2025-11-26T15:39:49.086642503Z > vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+2025-11-26T15:39:49.086648373Z 
+2025-11-26T15:39:49.275724179Z vite v5.4.20 building for production...
+2025-11-26T15:39:49.326215011Z transforming...
+2025-11-26T15:39:50.326270253Z 
+2025-11-26T15:39:50.326294774Z A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+2025-11-26T15:39:52.555872855Z ✓ 1666 modules transformed.
+2025-11-26T15:39:52.720068536Z rendering chunks...
+2025-11-26T15:39:52.725601949Z computing gzip size...
+2025-11-26T15:39:52.73496459Z ../dist/public/index.html                   2.01 kB │ gzip:   0.77 kB
+2025-11-26T15:39:52.735047755Z ../dist/public/assets/index-CJLi3WlY.css   84.38 kB │ gzip:  13.52 kB
+2025-11-26T15:39:52.735238877Z ../dist/public/assets/index-BByOYYq6.js   317.64 kB │ gzip: 100.34 kB
+2025-11-26T15:39:52.735557617Z ✓ built in 3.44s
+2025-11-26T15:39:52.782866573Z 
+2025-11-26T15:39:52.782887414Z   dist/index.js  16.1kb
+2025-11-26T15:39:52.782891604Z 
+2025-11-26T15:39:52.782895825Z ⚡ Done in 4ms
+2025-11-26T15:39:53.25966785Z ==> Uploading build...
+2025-11-26T15:40:02.37681461Z ==> Uploaded in 6.1s. Compression took 3.0s
+2025-11-26T15:40:02.415573575Z ==> Build successful 🎉
+2025-11-26T15:40:06.315505454Z ==> Deploying...
+2025-11-26T15:40:49.826395894Z ==> Running 'npm run start'
+2025-11-26T15:40:50.937040674Z 
+2025-11-26T15:40:50.937060115Z > rest-express@1.0.0 start
+2025-11-26T15:40:50.937064085Z > NODE_ENV=production node dist/index.js
+2025-11-26T15:40:50.937065816Z 
+2025-11-26T15:40:58.525290691Z file:///opt/render/project/src/node_modules/openid-client/build/index.js:89
+2025-11-26T15:40:58.525311532Z     const err = new TypeError(message, { cause });
+2025-11-26T15:40:58.525314972Z                 ^
+2025-11-26T15:40:58.525317282Z 
+2025-11-26T15:40:58.525321213Z TypeError: "clientId" must be a non-empty string
+2025-11-26T15:40:58.525325013Z     at CodedTypeError (file:///opt/render/project/src/node_modules/openid-client/build/index.js:89:17)
+2025-11-26T15:40:58.525328983Z     at new Configuration (file:///opt/render/project/src/node_modules/openid-client/build/index.js:463:19)
+2025-11-26T15:40:58.525331803Z     at Module.discovery (file:///opt/render/project/src/node_modules/openid-client/build/index.js:244:22)
+2025-11-26T15:40:58.525334813Z     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2025-11-26T15:40:58.525337354Z     at async memoize.maxAge (file:///opt/render/project/src/dist/index.js:118:12)
+2025-11-26T15:40:58.525339774Z     at async setupAuth (file:///opt/render/project/src/dist/index.js:166:18)
+2025-11-26T15:40:58.525342434Z     at async registerRoutes (file:///opt/render/project/src/dist/index.js:268:3)
+2025-11-26T15:40:58.525345004Z     at async runApp (file:///opt/render/project/src/dist/index.js:432:18)
+2025-11-26T15:40:58.525347534Z     at async file:///opt/render/project/src/dist/index.js:464:3 {
+2025-11-26T15:40:58.525350354Z   code: 'ERR_INVALID_ARG_TYPE',
+2025-11-26T15:40:58.525353114Z   [cause]: undefined
+2025-11-26T15:40:58.525355675Z }
+2025-11-26T15:40:58.525357815Z 
+2025-11-26T15:40:58.525360215Z Node.js v22.16.0
+2025-11-26T15:40:59.587113254Z ==> Exited with status 1
+2025-11-26T15:40:59.610357533Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+2025-11-26T15:41:04.007983821Z ==> Running 'npm run start'
+2025-11-26T15:41:04.908844676Z 
+2025-11-26T15:41:04.908869097Z > rest-express@1.0.0 start
+2025-11-26T15:41:04.908873978Z > NODE_ENV=production node dist/index.js
+2025-11-26T15:41:04.908876418Z 
+2025-11-26T15:41:12.198465356Z file:///opt/render/project/src/node_modules/openid-client/build/index.js:89
+2025-11-26T15:41:12.198488238Z     const err = new TypeError(message, { cause });
+2025-11-26T15:41:12.198491898Z                 ^
+2025-11-26T15:41:12.198494548Z 
+2025-11-26T15:41:12.198498218Z TypeError: "clientId" must be a non-empty string
+2025-11-26T15:41:12.198502309Z     at CodedTypeError (file:///opt/render/project/src/node_modules/openid-client/build/index.js:89:17)
+2025-11-26T15:41:12.198506279Z     at new Configuration (file:///opt/render/project/src/node_modules/openid-client/build/index.js:463:19)
+2025-11-26T15:41:12.198509349Z     at Module.discovery (file:///opt/render/project/src/node_modules/openid-client/build/index.js:244:22)
+2025-11-26T15:41:12.198513159Z     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2025-11-26T15:41:12.198515819Z     at async memoize.maxAge (file:///opt/render/project/src/dist/index.js:118:12)
+2025-11-26T15:41:12.19851885Z     at async setupAuth (file:///opt/render/project/src/dist/index.js:166:18)
+2025-11-26T15:41:12.19852157Z     at async registerRoutes (file:///opt/render/project/src/dist/index.js:268:3)
+2025-11-26T15:41:12.19852409Z     at async runApp (file:///opt/render/project/src/dist/index.js:432:18)
+2025-11-26T15:41:12.19852672Z     at async file:///opt/render/project/src/dist/index.js:464:3 {
+2025-11-26T15:41:12.19853009Z   code: 'ERR_INVALID_ARG_TYPE',
+2025-11-26T15:41:12.19853266Z   [cause]: undefined
+2025-11-26T15:41:12.19853538Z }
+2025-11-26T15:41:12.198537511Z 
+2025-11-26T15:41:12.198539931Z Node.js v22.16.0
