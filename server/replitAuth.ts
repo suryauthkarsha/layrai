@@ -63,6 +63,21 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
+  // Skip auth setup if REPL_ID is not available (e.g., on Vercel/Render)
+  if (!process.env.REPL_ID) {
+    console.warn("Warning: REPL_ID not set. Authentication disabled.");
+    // Set a mock user for non-Replit deployments
+    app.use((req: any, res, next) => {
+      req.user = {
+        claims: { sub: "default-user" },
+        isAuthenticated: true
+      };
+      req.isAuthenticated = () => true;
+      next();
+    });
+    return;
+  }
+
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -133,6 +148,11 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // If REPL_ID not set, auth is disabled - allow all requests
+  if (!process.env.REPL_ID) {
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {

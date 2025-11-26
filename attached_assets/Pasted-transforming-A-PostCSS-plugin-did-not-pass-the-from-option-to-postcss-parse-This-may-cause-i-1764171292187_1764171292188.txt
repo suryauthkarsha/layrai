@@ -1,0 +1,57 @@
+transforming...
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 1666 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                   2.01 kB │ gzip:   0.77 kB
+../dist/public/assets/index-CJLi3WlY.css   84.38 kB │ gzip:  13.52 kB
+../dist/public/assets/index-BByOYYq6.js   317.64 kB │ gzip: 100.34 kB
+✓ built in 3.69s
+  dist/index.js  16.1kb
+⚡ Done in 18ms
+==> Uploading build...
+==> Uploaded in 6.4s. Compression took 182.4s
+==> Build successful 🎉
+==> Deploying...
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+file:///opt/render/project/src/node_modules/openid-client/build/index.js:89
+    const err = new TypeError(message, { cause });
+                ^
+TypeError: "clientId" must be a non-empty string
+    at CodedTypeError (file:///opt/render/project/src/node_modules/openid-client/build/index.js:89:17)
+    at new Configuration (file:///opt/render/project/src/node_modules/openid-client/build/index.js:463:19)
+    at Module.discovery (file:///opt/render/project/src/node_modules/openid-client/build/index.js:244:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async memoize.maxAge (file:///opt/render/project/src/dist/index.js:118:12)
+    at async setupAuth (file:///opt/render/project/src/dist/index.js:166:18)
+    at async registerRoutes (file:///opt/render/project/src/dist/index.js:268:3)
+    at async runApp (file:///opt/render/project/src/dist/index.js:432:18)
+    at async file:///opt/render/project/src/dist/index.js:464:3 {
+  code: 'ERR_INVALID_ARG_TYPE',
+  [cause]: undefined
+}
+Node.js v22.16.0
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+file:///opt/render/project/src/node_modules/openid-client/build/index.js:89
+    const err = new TypeError(message, { cause });
+                ^
+TypeError: "clientId" must be a non-empty string
+    at CodedTypeError (file:///opt/render/project/src/node_modules/openid-client/build/index.js:89:17)
+    at new Configuration (file:///opt/render/project/src/node_modules/openid-client/build/index.js:463:19)
+    at Module.discovery (file:///opt/render/project/src/node_modules/openid-client/build/index.js:244:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async memoize.maxAge (file:///opt/render/project/src/dist/index.js:118:12)
+    at async setupAuth (file:///opt/render/project/src/dist/index.js:166:18)
+    at async registerRoutes (file:///opt/render/project/src/dist/index.js:268:3)
+    at async runApp (file:///opt/render/project/src/dist/index.js:432:18)
+    at async file:///opt/render/project/src/dist/index.js:464:3 {
+  code: 'ERR_INVALID_ARG_TYPE',
+  [cause]: undefined
+}
+Node.js v22.16.0
