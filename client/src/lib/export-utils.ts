@@ -33,7 +33,7 @@ export const captureElement = async (
     const element = document.getElementById(elementId);
     if (!element) return null;
     
-    // Simple direct capture of the element
+    // Capture the element and its iframe visually without accessing internal content
     // @ts-ignore
     const canvas = await window.html2canvas(element, { 
       backgroundColor: '#000000',
@@ -41,7 +41,8 @@ export const captureElement = async (
       useCORS: true,
       allowTaint: true,
       logging: false,
-      imageTimeout: 0
+      imageTimeout: 0,
+      foreignObjectRendering: true
     });
     
     if (canvas && filename) {
@@ -52,7 +53,7 @@ export const captureElement = async (
     }
     return canvas;
   } catch (error) {
-    console.error('Screenshot capture error:', error);
+    console.error('Screenshot error:', error);
     return null;
   }
 };
