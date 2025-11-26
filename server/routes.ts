@@ -168,8 +168,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log(`[Generation] Extracted ${extractedHtml.length} screen(s)`);
-      res.json({ screens: extractedHtml });
+      // Validate and fix empty image placeholders
+      const validatedHtml = extractedHtml.map(html => fillEmptyImages(html, imageUrls));
+
+      console.log(`[Generation] Extracted ${validatedHtml.length} screen(s)`);
+      res.json({ screens: validatedHtml });
     } catch (error: any) {
       console.error('Generation error:', error);
       res.status(500).json({ error: error.message || 'Generation failed' });
@@ -180,9 +183,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
+/**
+ * Fill empty or placeholder images with valid URLs from database
+ */
+function fillEmptyImages(html: string, imageUrls: string[]): string {
+  if (imageUrls.length === 0) return html;
+  
+  let result = html;
+  let imageIndex = 0;
+  
+  // Replace empty image src attributes with valid URLs
+  result = result.replace(/<img\s+([^>]*?)src=["']?["']([^>]*?)>/gi, (match, before, after) => {
+    if (imageIndex < imageUrls.length) {
+      return `<img ${before}src="${imageUrls[imageIndex++]}"${after}>`;
+    }
+    return match;
+  });
+  
+  // Replace placeholder/invalid src values
+  const placeholders = ['placeholder', 'undefined', 'null', '#', 'image', 'photo', '/image', '/photo'];
+  placeholders.forEach(placeholder => {
+    const regex = new RegExp(`src=["']${placeholder}["']`, 'gi');
+    result = result.replace(regex, () => {
+      if (imageIndex < imageUrls.length) {
+        return `src="${imageUrls[imageIndex++]}"`;
+      }
+      return `src="${imageUrls[0]}"`;
+    });
+  });
+  
+  return result;
+}
+
+
 function getSystemPrompt(screenCount: number, platform: string, features: string[], imageUrls: string[] = []) {
   const imageExamples = imageUrls.length > 0 
-    ? `\n**REAL IMAGE URLS TO USE (MUST USE THESE - copy and paste exactly):**\n${imageUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}\n\nYOU MUST USE THESE EXACT URLS IN <img> TAGS - DO NOT MODIFY THEM.`
+    ? `\n**REAL IMAGE URLS TO USE (MUST USE THESE - copy and paste exactly):**\n${imageUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}\n\n⚠️ CRITICAL: EVERY <img> TAG MUST HAVE A VALID src ATTRIBUTE. NEVER create empty images with src="" or missing src. ALWAYS copy exact URLs above or use CSS gradients/SVG instead. No placeholder images allowed.`
     : '';
   
   return `
@@ -210,17 +246,19 @@ TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/T
    - Use emoji combinations: 🎉✨🚀, 💡🔥⚡, etc.
    - Emojis enhance visual hierarchy and make the design fun and engaging
 
-4. **IMAGES - OPTIONAL (use emojis instead when possible):**
-   - Optional: You MAY include 1-2 images if it enhances the design significantly
-   - Use REAL image URLs provided below if you choose to include images
-   - Prefer emojis over images for icons, bullets, and visual elements
-   - If using images, place them prominently in hero sections or backgrounds only
-   - CSS gradients and SVG are good alternatives to images
+4. **IMAGES - MANDATORY WHEN RELEVANT:**
+   - If you use ANY <img> tags, ONLY use the REAL image URLs provided below - copy them EXACTLY
+   - NEVER create empty images: NO src="", NO src=undefined, NO src="#", NO missing src attributes
+   - NEVER use placeholder text in src attributes
+   - Use CSS gradients or SVG illustrations instead of placeholder images
+   - If adding images, place them prominently in hero sections or backgrounds
+   - Every image MUST have a valid, working URL${imageExamples}
 
 5. **LAYOUT:** The root div MUST have 'w-full h-full min-h-screen' to fill the frame.
 6. **CONTENT:** Make it look realistic. Fill text with relevant content. Add depth with shadows and layering.
 7. **STYLING:** Use Tailwind CSS extensively. Include hover effects, transitions, and visual polish.
 8. **NO JAVASCRIPT.** Pure HTML/CSS structure only.
+9. **NO EMPTY IMAGES:** Before outputting, review your HTML to ensure NO <img> tags have empty src attributes. This is CRITICAL.
 
 User Prompt Context: ${platform} Application.
 FEATURES: ${features.join(', ') || 'Modern UI'}.
