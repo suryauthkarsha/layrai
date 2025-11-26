@@ -737,11 +737,12 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             {/* Logo placeholder - centered in canvas */}
             {generatedScreens.length === 0 && !isGenerating && (
               <div 
-                className="absolute z-10 flex flex-col items-center justify-center" 
+                className="fixed z-10 flex flex-col items-center justify-center" 
                 style={{ 
-                  top: '50vh', 
-                  left: '50%', 
-                  transform: 'translate(-50%, -50%)',
+                  top: '120px',
+                  left: sidebarIsOpened ? `calc(${sidebarWidth}px + (100vw - ${sidebarWidth}px) / 2)` : '50%',
+                  transform: 'translate(-50%, 0)',
+                  transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   pointerEvents: 'none'
                 }}
               >
