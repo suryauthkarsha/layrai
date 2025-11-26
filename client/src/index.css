@@ -116,6 +116,10 @@
   height: 20px;
 }
 
+.viewport-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .viewport-container::-webkit-scrollbar-thumb {
   background: #000000;
   border-radius: 10px;

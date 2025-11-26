@@ -748,7 +748,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                 style={{
                   transform: `translate(${(screen.x || 0)}px, ${(screen.y || 0)}px)${idx === activeScreenIndex ? ' scale(1.02)' : ''}`,
                   transformOrigin: 'top left',
-                  zIndex: activeScreenIndex === idx && isDraggingScreen ? 60 : activeScreenIndex === idx ? 10 : 5,
+                  zIndex: isGenerating ? 2 : (activeScreenIndex === idx && isDraggingScreen ? 60 : activeScreenIndex === idx ? 10 : 5),
                   transition: isDraggingScreen ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
                 data-testid={`screen-${idx}`}
