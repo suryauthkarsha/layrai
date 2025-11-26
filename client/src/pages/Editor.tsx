@@ -673,7 +673,10 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
         {/* Canvas Area */}
         <div 
           ref={canvasRef} 
-          className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${isGenerating ? 'viewport-generating shadow-2xl shadow-blue-500/50 inset' : ''}`}
+          className={`viewport-container flex-1 relative overflow-auto ${toolMode === 'hand' || isPanning ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${isGenerating ? 'shadow-2xl shadow-blue-500/60 inset' : ''}`}
+          style={isGenerating ? {
+            boxShadow: 'inset 0 0 40px rgba(59, 130, 246, 0.6), inset 0 0 100px rgba(59, 130, 246, 0.3)',
+          } : undefined}
           onMouseDown={(e) => {
             if ((toolMode === 'hand' || isSpacePanning) && !isPanning) {
               setIsPanning(true);
@@ -735,11 +738,10 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
           >
             {/* Initial placeholder - centered on canvas */}
             {generatedScreens.length === 0 && !isGenerating && (
-              <div className="fixed z-10 flex flex-col items-center justify-center" style={{ left: 'calc(50% + 60px)', top: '50%', transform: 'translate(-50%, -50%)' }}>
+              <div className="fixed z-10 flex flex-col items-center justify-center" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}>
                 <div className="w-40 h-40 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center shadow-2xl shadow-blue-500/30 animate-pulse">
                   <Wand2 size={60} className="text-blue-400" />
                 </div>
-                <p className="mt-8 text-neutral-300 text-4xl font-bold tracking-widest" data-testid="text-placeholder">Start Architecting</p>
               </div>
             )}
 
