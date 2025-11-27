@@ -4,89 +4,57 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { Project, DBProject } from '@shared/schema';
+import type { Project } from '@shared/schema';
 import Home from "@/pages/Home";
 import Editor from "@/pages/Editor";
-import Landing from "@/pages/Landing";
-import { useAuth } from "@/hooks/useAuth";
+import { nanoid } from 'nanoid';
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [location, setLocation] = useLocation();
-  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load projects from API when authenticated
+  // Load projects from localStorage on mount
   useEffect(() => {
-    if (!isAuthenticated || isLoading) return;
-    
-    const loadProjects = async () => {
-      try {
-        setIsLoadingProjects(true);
-        const response = await fetch('/api/projects');
-        if (response.ok) {
-          const dbProjects: DBProject[] = await response.json();
-          // Convert DBProject to Project format
-          const convertedProjects: Project[] = dbProjects.map(p => ({
-            id: p.id,
-            name: p.name,
-            updatedAt: p.updatedAt ? new Date(p.updatedAt).getTime() : Date.now(),
-            data: p.data as any
-          }));
-          setProjects(convertedProjects);
-        }
-      } catch (error) {
-        console.error('Failed to load projects:', error);
-      } finally {
-        setIsLoadingProjects(false);
-      }
-    };
-    
-    loadProjects();
-  }, [isAuthenticated, isLoading]);
-
-  const handleCreateProject = async () => {
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: `Project ${projects.length + 1}`,
-          data: { screens: [] }
-        })
-      });
-      
-      if (response.ok) {
-        const newDBProject: DBProject = await response.json();
-        const newProject: Project = {
-          id: newDBProject.id,
-          name: newDBProject.name,
-          updatedAt: newDBProject.updatedAt ? new Date(newDBProject.updatedAt).getTime() : Date.now(),
-          data: newDBProject.data as any
-        };
-        setProjects(prev => [...prev, newProject]);
-        setActiveProjectId(newProject.id);
-        setLocation('/editor');
+      const stored = localStorage.getItem('layr_projects_v3');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setProjects(Array.isArray(parsed) ? parsed : []);
       }
     } catch (error) {
-      console.error('Failed to create project:', error);
+      console.error('Failed to load projects from localStorage:', error);
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
+
+  // Save projects to localStorage whenever they change
+  useEffect(() => {
+    if (!isLoading) {
+      localStorage.setItem('layr_projects_v3', JSON.stringify(projects));
+    }
+  }, [projects, isLoading]);
+
+  const handleCreateProject = () => {
+    const newProject: Project = {
+      id: nanoid(),
+      name: `Project ${projects.length + 1}`,
+      updatedAt: Date.now(),
+      data: { screens: [] }
+    };
+    setProjects(prev => [...prev, newProject]);
+    setActiveProjectId(newProject.id);
+    setLocation('/editor');
   };
 
-  const handleDeleteProject = async (id: string) => {
+  const handleDeleteProject = (id: string) => {
     if (confirm('Delete this project?')) {
-      try {
-        const response = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-        if (response.ok) {
-          setProjects(prev => prev.filter(p => p.id !== id));
-          if (activeProjectId === id) {
-            setActiveProjectId(null);
-            setLocation('/');
-          }
-        }
-      } catch (error) {
-        console.error('Failed to delete project:', error);
+      setProjects(prev => prev.filter(p => p.id !== id));
+      if (activeProjectId === id) {
+        setActiveProjectId(null);
+        setLocation('/');
       }
     }
   };
@@ -96,20 +64,8 @@ function Router() {
     setLocation('/editor');
   };
 
-  const handleSaveProject = async (updatedProject: Project) => {
-    try {
-      const response = await fetch(`/api/projects/${updatedProject.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: updatedProject.data })
-      });
-      
-      if (response.ok) {
-        setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
-      }
-    } catch (error) {
-      console.error('Failed to save project:', error);
-    }
+  const handleSaveProject = (updatedProject: Project) => {
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? { ...updatedProject, updatedAt: Date.now() } : p));
   };
 
   const handleBackToHome = () => {
@@ -119,7 +75,7 @@ function Router() {
 
   const activeProject = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
 
-  if (isLoading || isLoadingProjects) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#050505] text-white">
         <p className="text-xl">Loading...</p>
@@ -130,16 +86,12 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        {isAuthenticated ? (
-          <Home 
-            projects={projects}
-            onCreate={handleCreateProject}
-            onDelete={handleDeleteProject}
-            onOpen={handleOpenProject}
-          />
-        ) : (
-          <Landing />
-        )}
+        <Home 
+          projects={projects}
+          onCreate={handleCreateProject}
+          onDelete={handleDeleteProject}
+          onOpen={handleOpenProject}
+        />
       </Route>
       <Route path="/editor">
         {activeProject ? (
