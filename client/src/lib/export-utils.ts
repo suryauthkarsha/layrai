@@ -99,7 +99,7 @@ export const exportPDF = async (elementId: string, filename: string): Promise<vo
   
   // @ts-ignore
   const { jsPDF } = window.jspdf;
-  const canvas = await captureElement(elementId, 2);
+  const canvas = await captureElement(elementId, filename, 2);
   if (!canvas) return;
   
   const imgData = canvas.toDataURL('image/jpeg', 1.0);
