@@ -17,13 +17,8 @@ export const IMAGE_DATABASE = [
 ];
 
 /**
- * Get random images from the database
+ * Get specific images from the database (not random)
  */
 export function getRandomImages(count: number = 3): string[] {
-  const images: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const randomIndex = Math.floor(Math.random() * IMAGE_DATABASE.length);
-    images.push(IMAGE_DATABASE[randomIndex]);
-  }
-  return images;
+  return IMAGE_DATABASE.slice(0, count);
 }
