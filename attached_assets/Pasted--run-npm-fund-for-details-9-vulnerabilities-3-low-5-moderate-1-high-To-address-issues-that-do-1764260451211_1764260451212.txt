@@ -1,0 +1,53 @@
+  run `npm fund` for details
+9 vulnerabilities (3 low, 5 moderate, 1 high)
+To address issues that do not require attention, run:
+  npm audit fix
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+> rest-express@1.0.0 build
+> vite build && esbuild server/index-prod.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js
+vite v5.4.20 building for production...
+transforming...
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 1666 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                   2.01 kB │ gzip:  0.77 kB
+../dist/public/assets/index-V6QSW-qD.css   85.45 kB │ gzip: 13.69 kB
+../dist/public/assets/index-Dm3zyNo7.js   303.83 kB │ gzip: 96.65 kB
+✓ built in 3.86s
+  dist/index.js  22.2kb
+⚡ Done in 6ms
+==> Uploading build...
+==> Uploaded in 5.5s. Compression took 3.5s
+==> Build successful 🎉
+==> Deploying...
+==> No open ports detected, continuing to scan...
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+file:///opt/render/project/src/dist/index.js:91
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at file:///opt/render/project/src/dist/index.js:91:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:274:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.16.0
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+file:///opt/render/project/src/dist/index.js:91
+  throw new Error(
+        ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at file:///opt/render/project/src/dist/index.js:91:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:274:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.16.0
