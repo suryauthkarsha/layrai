@@ -171,6 +171,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate and fix empty image placeholders
       const validatedHtml = extractedHtml.map(html => fillEmptyImages(html, imageUrls));
 
+      // Check if designs have enough images - if not, reject and ask to regenerate
+      for (const html of validatedHtml) {
+        const imgCount = (html.match(/<img[^>]+src=["'](?!["'])([^"']+)["']/gi) || []).length;
+        if (imgCount === 0) {
+          console.log(`[Generation] Design has no images, requesting regeneration...`);
+          return res.status(400).json({ error: "Design must include at least 2 images. Please try again." });
+        }
+      }
+
       console.log(`[Generation] Extracted ${validatedHtml.length} screen(s)`);
       res.json({ screens: validatedHtml });
     } catch (error: any) {
@@ -246,12 +255,13 @@ TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/T
    - Use emoji combinations: 🎉✨🚀, 💡🔥⚡, etc.
    - Emojis enhance visual hierarchy and make the design fun and engaging
 
-4. **IMAGES - MANDATORY WHEN RELEVANT:**
-   - If you use ANY <img> tags, ONLY use the REAL image URLs provided below - copy them EXACTLY
+4. **IMAGES - 100% MANDATORY:**
+   - EVERY DESIGN MUST INCLUDE 2-3 REAL IMAGES using the URLs below
+   - Copy image URLs EXACTLY from the list below - these are REAL, WORKING URLs
+   - Place images prominently in hero sections, backgrounds, feature showcases
    - NEVER create empty images: NO src="", NO src=undefined, NO src="#", NO missing src attributes
-   - NEVER use placeholder text in src attributes
-   - Use CSS gradients or SVG illustrations instead of placeholder images
-   - If adding images, place them prominently in hero sections or backgrounds
+   - NEVER use placeholder text like "image", "photo", "placeholder" in src
+   - Use the exact image URLs provided - no substitutions allowed
    - Every image MUST have a valid, working URL${imageExamples}
 
 5. **LAYOUT:** The root div MUST have 'w-full h-full min-h-screen' to fill the frame.
