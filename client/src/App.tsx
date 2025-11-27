@@ -69,6 +69,10 @@ function Router() {
   };
 
   const handleBackToHome = () => {
+    // Delete the current project when exiting the canvas
+    if (activeProjectId) {
+      setProjects(prev => prev.filter(p => p.id !== activeProjectId));
+    }
     setActiveProjectId(null);
     setLocation('/');
   };
