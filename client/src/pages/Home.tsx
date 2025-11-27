@@ -7,9 +7,10 @@ interface HomeProps {
   onCreate: () => void;
   onDelete: (id: string) => void;
   onOpen: (id: string) => void;
+  onClearAll: () => void;
 }
 
-export default function Home({ projects, onCreate, onDelete, onOpen }: HomeProps) {
+export default function Home({ projects, onCreate, onDelete, onOpen, onClearAll }: HomeProps) {
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center font-sans relative">
       
@@ -84,9 +85,20 @@ export default function Home({ projects, onCreate, onDelete, onOpen }: HomeProps
         
 
         {/* Project List */}
-        <h2 className="text-2xl font-bold mb-6 text-neutral-300 border-b border-white/5 pb-2" data-testid="text-projects-heading">
-          Your Projects ({projects.length})
-        </h2>
+        <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-2">
+          <h2 className="text-2xl font-bold text-neutral-300" data-testid="text-projects-heading">
+            Your Projects ({projects.length})
+          </h2>
+          {projects.length > 0 && (
+            <button
+              onClick={onClearAll}
+              className="text-xs px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-400 rounded transition-colors"
+              data-testid="button-clear-all-projects"
+            >
+              Clear All
+            </button>
+          )}
+        </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {/* New Project Card */}

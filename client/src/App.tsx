@@ -77,6 +77,13 @@ function Router() {
     setLocation('/');
   };
 
+  const handleClearAllProjects = () => {
+    if (confirm('Delete ALL projects? This cannot be undone.')) {
+      setProjects([]);
+      setActiveProjectId(null);
+    }
+  };
+
   const activeProject = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
 
   if (isLoading) {
@@ -95,6 +102,7 @@ function Router() {
           onCreate={handleCreateProject}
           onDelete={handleDeleteProject}
           onOpen={handleOpenProject}
+          onClearAll={handleClearAllProjects}
         />
       </Route>
       <Route path="/editor">
