@@ -201,24 +201,46 @@ function fillEmptyImages(html: string, imageUrls: string[]): string {
   let result = html;
   let imageIndex = 0;
   
-  // Replace empty image src attributes with valid URLs
-  result = result.replace(/<img\s+([^>]*?)src=["']?["']([^>]*?)>/gi, (match, before, after) => {
+  // 1. Replace img tags with missing src attribute completely
+  result = result.replace(/<img\s+([^>]*)(?!src)([^>]*)>/gi, (match) => {
+    if (imageIndex < imageUrls.length) {
+      return `<img src="${imageUrls[imageIndex++]}" ${match.replace(/<img\s+/, '').replace(/>/, '')}>`;
+    }
+    return match;
+  });
+  
+  // 2. Replace empty src attributes src="" or src=''
+  result = result.replace(/<img\s+([^>]*)src=["']["']([^>]*)>/gi, (match, before, after) => {
     if (imageIndex < imageUrls.length) {
       return `<img ${before}src="${imageUrls[imageIndex++]}"${after}>`;
     }
     return match;
   });
   
-  // Replace placeholder/invalid src values
-  const placeholders = ['placeholder', 'undefined', 'null', '#', 'image', 'photo', '/image', '/photo'];
+  // 3. Replace common placeholder values
+  const placeholders = ['placeholder', 'undefined', 'null', 'none', '#', 'image', 'photo', '/image', '/photo', 'img', 'picture', 'src'];
   placeholders.forEach(placeholder => {
     const regex = new RegExp(`src=["']${placeholder}["']`, 'gi');
     result = result.replace(regex, () => {
       if (imageIndex < imageUrls.length) {
         return `src="${imageUrls[imageIndex++]}"`;
       }
-      return `src="${imageUrls[0]}"`;
+      return `src="${imageUrls[imageIndex % imageUrls.length]}"`;
     });
+  });
+  
+  // 4. Find any remaining img tags without valid URLs and add them
+  const imgRegex = /<img[^>]*>/gi;
+  const matches = result.match(imgRegex) || [];
+  matches.forEach((match) => {
+    if (!match.includes('source.unsplash.com') && !match.includes('images.pexels.com')) {
+      const hasValidSrc = /src=["'](?!["'])(https?:\/\/|data:)/.test(match);
+      if (!hasValidSrc) {
+        const newSrc = imageUrls[imageIndex % imageUrls.length];
+        if (imageIndex < imageUrls.length) imageIndex++;
+        result = result.replace(match, match.replace(/>$/, ` src="${newSrc}">`));
+      }
+    }
   });
   
   return result;
@@ -226,13 +248,12 @@ function fillEmptyImages(html: string, imageUrls: string[]): string {
 
 
 function getSystemPrompt(screenCount: number, platform: string, features: string[], imageUrls: string[] = []) {
-  const imageExamples = imageUrls.length > 0 
-    ? `\n**REAL IMAGE URLS TO USE (MUST USE THESE - copy and paste exactly):**\n${imageUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}\n\n⚠️ CRITICAL: EVERY <img> TAG MUST HAVE A VALID src ATTRIBUTE. NEVER create empty images with src="" or missing src. ALWAYS copy exact URLs above or use CSS gradients/SVG instead. No placeholder images allowed.`
-    : '';
-  
   return `
 You are a specialized UI Generator that creates beautiful, realistic designs with REQUIRED imagery and emojis.
 TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/Tailwind CSS based on the user's prompt.
+
+**IMAGE URLS - COPY AND PASTE THESE EXACTLY INTO YOUR HTML:**
+${imageUrls.map((url, i) => `Image ${i + 1}: ${url}`).join('\n')}
 
 **CRITICAL RULES - MUST FOLLOW:**
 1. **OUTPUT RAW HTML ONLY.** Do not wrap in JSON. Use Markdown code blocks ONLY for readability: \`\`\`html ... \`\`\`.
@@ -241,6 +262,7 @@ TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/T
    \`\`\`html
    <!-- Screen: [A Unique Name for Screen] -->
    <div class="w-full h-full min-h-screen bg-white [styles]">
+      <img src="${imageUrls[0]}" alt="image" style="width: 100%; height: auto;">
       ... content ...
    </div>
    \`\`\`
@@ -255,27 +277,25 @@ TASK: Generate ${screenCount} screen(s) of high-quality, production-ready HTML/T
    - Use emoji combinations: 🎉✨🚀, 💡🔥⚡, etc.
    - Emojis enhance visual hierarchy and make the design fun and engaging
 
-4. **IMAGES - 100% MANDATORY:**
-   - EVERY DESIGN MUST INCLUDE 2-3 REAL IMAGES using the URLs below
-   - Copy image URLs EXACTLY from the list below - these are REAL, WORKING URLs
+4. **IMAGES - 100% MANDATORY (USE THE URLS ABOVE):**
+   - EVERY DESIGN MUST INCLUDE 2-3 REAL IMAGES
+   - Paste these URLs EXACTLY as shown above: ${imageUrls.join(', ')}
    - Place images prominently in hero sections, backgrounds, feature showcases
    - NEVER create empty images: NO src="", NO src=undefined, NO src="#", NO missing src attributes
    - NEVER use placeholder text like "image", "photo", "placeholder" in src
-   - Use the exact image URLs provided - no substitutions allowed
-   - Every image MUST have a valid, working URL${imageExamples}
+   - CRITICAL: COPY THE URLs ABOVE EXACTLY AND PASTE THEM INTO <img src="..."> TAGS
+   - Example: <img src="${imageUrls[0]}" alt="image">
 
 5. **LAYOUT:** The root div MUST have 'w-full h-full min-h-screen' to fill the frame.
 6. **CONTENT:** Make it look realistic. Fill text with relevant content. Add depth with shadows and layering.
 7. **STYLING:** Use Tailwind CSS extensively. Include hover effects, transitions, and visual polish.
 8. **NO JAVASCRIPT.** Pure HTML/CSS structure only.
-9. **NO EMPTY IMAGES:** Before outputting, review your HTML to ensure NO <img> tags have empty src attributes. This is CRITICAL.
+9. **DOUBLE-CHECK BEFORE SUBMITTING:** Review every <img> tag. Make sure EVERY img tag has a valid src URL from the list above. NO EMPTY src="" attributes allowed.
 
 User Prompt Context: ${platform} Application.
 FEATURES: ${features.join(', ') || 'Modern UI'}.
 
-${imageExamples}
-
-**WARNING:** Every <img> tag MUST have a valid src URL. Empty img tags or placeholder divs will cause rejection.
+**FINAL WARNING:** If ANY <img> tag has an empty or invalid src, the entire design will be rejected. COPY AND PASTE the image URLs exactly.
 Make your designs STUNNING with beautiful, real imagery AND EMOJIS.
 `;
 }

@@ -444,7 +444,7 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
     if (activeScreenIndex >= idx && activeScreenIndex > 0) setActiveScreenIndex(activeScreenIndex - 1);
   };
 
-  const handleExport = async (format: 'html' | 'html-all' | 'pdf' | 'png', screenIndex: number | null) => {
+  const handleExport = async (format: 'html' | 'html-all', screenIndex: number | null) => {
     if (format === 'html' && screenIndex !== null) {
       const screen = generatedScreens[screenIndex];
       const wrappedHtml = `<!DOCTYPE html>
@@ -498,14 +498,6 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       a.href = URL.createObjectURL(new Blob([wrappedHtml], { type: 'text/html' }));
       a.download = 'all-screens.html';
       a.click();
-    } else if (format === 'pdf' && screenIndex !== null) {
-      exportPDF(`screen-${screenIndex}`, generatedScreens[screenIndex].name);
-    } else if (format === 'png' && screenIndex !== null) {
-      // Capture the specific screen frame
-      const screenElement = document.getElementById(`screen-${screenIndex}`);
-      if (screenElement) {
-        await captureElement(`screen-${screenIndex}`, `${project.name || 'design'}-screen-${screenIndex + 1}`, 3, false);
-      }
     }
   };
 
@@ -651,12 +643,6 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
                 </div>
                 <div onClick={() => { handleExport('html-all', null); setExportMenuOpen(false); }} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs hover:bg-white/10 text-white cursor-pointer" data-testid="button-export-html-all">
                   <FileCode size={14} className="text-cyan-400" /> All HTML
-                </div>
-                <div onClick={() => { handleExport('pdf', activeScreenIndex); setExportMenuOpen(false); }} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs hover:bg-white/10 text-white cursor-pointer" data-testid="button-export-pdf">
-                  <FileText size={14} className="text-red-400" /> PDF
-                </div>
-                <div onClick={() => { handleExport('png', activeScreenIndex); setExportMenuOpen(false); }} className="flex items-center gap-2 w-full px-4 py-2.5 text-xs hover:bg-white/10 text-white cursor-pointer" data-testid="button-export-png">
-                  <FileImage size={14} className="text-purple-400" /> Image
                 </div>
               </div>
             )}
