@@ -21,10 +21,11 @@ export const captureElement = async (
   elementId: string | null, 
   filename?: string,
   scaleFactor = 3, 
-  fullViewport = false
+  fullViewport = false,
+  rawHtml?: string
 ): Promise<HTMLCanvasElement | null> => {
   try {
-    if (!elementId) return null;
+    if (!elementId && !rawHtml) return null;
     
     // Load html2canvas first
     // @ts-ignore
@@ -36,18 +37,43 @@ export const captureElement = async (
     const html2canvas = window.html2canvas;
     if (!html2canvas) return null;
     
-    const element = document.getElementById(elementId);
+    let element = document.getElementById(elementId || '');
+    
+    // If rawHtml is provided, create a temporary element to capture
+    let tempContainer: HTMLDivElement | null = null;
+    if (rawHtml && !element) {
+      tempContainer = document.createElement('div');
+      tempContainer.style.position = 'fixed';
+      tempContainer.style.top = '0';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '400px';
+      tempContainer.style.height = '800px';
+      tempContainer.innerHTML = rawHtml;
+      document.body.appendChild(tempContainer);
+      element = tempContainer;
+      // Wait for images to load
+      await delay(2000);
+    }
+    
     if (!element) return null;
     
-    // Simple direct render - let html2canvas handle everything
+    // Render with better settings for external images
     // @ts-ignore
     const canvas = await html2canvas(element, {
       backgroundColor: '#000000',
       scale: scaleFactor,
       useCORS: true,
       allowTaint: true,
-      logging: false
+      logging: false,
+      imageTimeout: 10000,
+      async: true,
+      foreignObjectRendering: false
     });
+    
+    // Clean up temp container
+    if (tempContainer) {
+      document.body.removeChild(tempContainer);
+    }
     
     if (canvas && filename) {
       const a = document.createElement('a');

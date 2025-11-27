@@ -499,9 +499,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
       a.download = 'all-screens.html';
       a.click();
     } else if (format === 'png' && screenIndex !== null) {
-      const screenElement = document.getElementById(`screen-${screenIndex}`);
-      if (screenElement) {
-        await captureElement(`screen-${screenIndex}`, `${project.name || 'design'}-screen-${screenIndex + 1}`, 3, false);
+      const screen = generatedScreens[screenIndex];
+      if (screen) {
+        await captureElement(null, `${project.name || 'design'}-screen-${screenIndex + 1}`, 3, false, screen.rawHtml);
       }
     }
   };
