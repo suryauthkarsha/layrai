@@ -61,12 +61,12 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
   const isDrawingToolActive = toolMode === 'pen' || toolMode === 'eraser' || toolMode === 'text' || toolMode === 'shapes';
   const isInteracting = isPanning || isDrawingToolActive || isDraggingScreen;
 
-  const fixedUILeft = sidebarIsOpened ? 'calc(50% + 160px)' : '50%';
+  const fixedUILeft = '50%';
   const fixedUIStyle: React.CSSProperties = {
     position: 'fixed',
     left: fixedUILeft as any,
     transform: 'translateX(-50%)',
-    transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'none',
     zIndex: 100
   };
 
