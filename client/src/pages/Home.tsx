@@ -26,18 +26,15 @@ export default function Home({ projects, onCreate, onDelete, onOpen, onClearAll 
       <div className="w-full z-10">
         
         {/* Hero Section with Image */}
-        <div className="relative w-full h-[500px] overflow-hidden">
+        <div className="relative w-full bg-black overflow-hidden flex items-center justify-center" style={{ minHeight: '600px' }}>
           
-          {/* Background Image - No Gradient */}
-          <div 
-            className="absolute inset-0 w-full h-full" 
-            style={{ 
-              backgroundImage: `url('${HERO_IMAGE_URL}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
-          ></div>
+          {/* Background Image - Maintains Original Aspect Ratio */}
+          <img 
+            src={HERO_IMAGE_URL} 
+            alt="Hero" 
+            className="w-full h-full object-contain"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+          />
           
           {/* Top Dark Gradient Overlay */}
           <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black via-black/60 to-transparent z-10"></div>
