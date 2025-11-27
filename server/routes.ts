@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { GoogleGenAI } from "@google/genai";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { IMAGE_DATABASE } from "./lib/image-db";
+import { getRandomImages } from "./lib/image-db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -122,8 +122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "API key not configured" });
       }
 
-      // Use specific images from database (no randomization - consistent images)
-      const imageUrls = IMAGE_DATABASE.slice(0, 3);
+      // Generate random images from Unsplash - fresh images every time
+      const imageUrls = getRandomImages(3);
       
       const systemPrompt = getSystemPrompt(screenCount || 1, platform || 'mobile', [], imageUrls);
 

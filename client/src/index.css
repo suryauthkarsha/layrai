@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide scrollbars by default, show only on hover */
+.viewport-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.viewport-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.viewport-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  display: none;
+}
+
+.viewport-container:hover::-webkit-scrollbar-thumb {
+  display: block;
+}
+
+.viewport-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);

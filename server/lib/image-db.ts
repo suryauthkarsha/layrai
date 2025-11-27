@@ -1,24 +1,22 @@
-// Pre-made database of high-quality Pexels images to speed up generation
-// These are real image URLs that don't require API calls during generation
+// Generate random Unsplash URLs for images
+// Each URL is unique and pulls from Unsplash's vast image library
 
-export const IMAGE_DATABASE = [
-  'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3945683/pexels-photo-3945683.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3714896/pexels-photo-3714896.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3808517/pexels-photo-3808517.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3975517/pexels-photo-3975517.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3930986/pexels-photo-3930986.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3962286/pexels-photo-3962286.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3857885/pexels-photo-3857885.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3808514/pexels-photo-3808514.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3913025/pexels-photo-3913025.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3808516/pexels-photo-3808516.jpeg?auto=compress&cs=tinysrgb&w=600',
-  'https://images.pexels.com/photos/3755681/pexels-photo-3755681.jpeg?auto=compress&cs=tinysrgb&w=600',
-];
+export const IMAGE_DATABASE: string[] = [];
 
 /**
- * Get specific images from the database (not random)
+ * Generate random Unsplash image URLs
+ * Returns fresh random images from Unsplash each time
  */
 export function getRandomImages(count: number = 3): string[] {
-  return IMAGE_DATABASE.slice(0, count);
+  const images: string[] = [];
+  const keywords = ['business', 'design', 'technology', 'nature', 'landscape', 'workspace', 'creative', 'modern'];
+  
+  for (let i = 0; i < count; i++) {
+    const keyword = keywords[Math.floor(Math.random() * keywords.length)];
+    const randomId = Math.random().toString(36).substring(2, 15);
+    // Using Unsplash's random image endpoint with keywords for variety
+    images.push(`https://source.unsplash.com/random/800x600?${keyword}&t=${randomId}`);
+  }
+  
+  return images;
 }

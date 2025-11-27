@@ -681,7 +681,9 @@ export default function Editor({ project, onSave, onBack }: EditorProps) {
             backgroundRepeat: 'repeat',
             backgroundAttachment: 'local',
             boxShadow: isGenerating ? 'inset 0 0 40px rgba(59, 130, 246, 0.6), inset 0 0 100px rgba(59, 130, 246, 0.3)' : 'none',
-          }}
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(255,255,255,0.2) transparent',
+          } as React.CSSProperties & { scrollbarWidth: string; scrollbarColor: string; }}
           onMouseDown={(e) => {
             if ((toolMode === 'hand' || isSpacePanning) && !isPanning) {
               setIsPanning(true);
